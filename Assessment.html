@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NCOET Engineering Faculty - Assessment & Analytics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 10px; background: #f9f9f9; }
+        h1, h2, h3 { text-align: center; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 10px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input[type="text"], input[type="date"], input[type="number"], textarea, select {
+            width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;
+        }
+        textarea { height: 80px; resize: vertical; }
+        button { margin: 10px 5px 10px 0; padding: 10px 15px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0055aa; }
+        button.small { padding: 5px 10px; font-size: 0.9em; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #f0f0f0; }
+        .entry { border: 1px solid #ddd; padding: 15px; margin: 15px 0; border-radius: 4px; background: #f5f5f5; }
+        .section { margin-top: 40px; border: 1px solid #ccc; padding: 20px; background: white; display: none; }
+        .marks-input { width: 60px; text-align: center; }
+        canvas { max-width: 100%; margin: 20px 0; }
+        @media print {
+            body { background: white; }
+            button, .no-print { display: none; }
+            .container { box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>National College of Education on Technology<br>Kuliyapitiya</h1>
+        <h2>Faculty of Engineering Technology  - Assessment & Analytics Manager</h2>
+
+        <button onclick="showForm()">Add New Assignment Schedule</button>
+        <button onclick="showDashboard()">Student Analytics Dashboard</button>
+        <button onclick="exportAllCSV()">Export All Data (CSV)</button>
+
+        <!-- Assignment Form -->
+        <div id="formContainer" class="section">
+            <h2>Assignment Details</h2>
+            <form id="assignmentForm">
+                <label>1. Program:</label>
+                <input type="text" id="program" required>
+
+                <label>2. Semester:</label>
+                <input type="text" id="semester" required>
+
+                <label>3. Faculty:</label>
+                <input type="text" id="faculty" required>
+
+                <label>Class (for marking):</label>
+                <select id="assignClass" required>
+                    <option value="ET-1">ET-1</option>
+                    <option value="ET-2">ET-2</option>
+                </select>
+
+                <label>4. Number of Assignments for the semester:</label>
+                <input type="number" id="numAssignments" min="1">
+
+                <label>5. Assignment Number:</label>
+                <input type="number" id="assignNum" min="1" required>
+
+                <label>6. Competency / Theme:</label>
+                <textarea id="competency"></textarea>
+
+                <label>7. Given date:</label>
+                <input type="date" id="givenDate">
+
+                <label>8. Due Date:</label>
+                <input type="date" id="dueDate">
+
+                <label>9. Methodology:</label>
+                <textarea id="methodology"></textarea>
+
+                <label>10. Expected Learning Outcomes:</label>
+                <textarea id="outcomes"></textarea>
+
+                <label>11. General Instructions:</label>
+                <textarea id="instructions"></textarea>
+
+                <h3>12. Structured Rubrics (Dynamic)</h3>
+                <table id="rubricTable">
+                    <thead><tr><th>No</th><th>Criterion</th><th>Max Marks</th><th>Action</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+                <button type="button" onclick="addRubricRow()">Add Criterion</button>
+
+                <label>13. Reviewed by:</label>
+                <input type="text" id="reviewedBy">
+
+                <label>14. Program Committee Approval Names (3):</label>
+                <input type="text" id="pc1" placeholder="Name 1">
+                <input type="text" id="pc2" placeholder="Name 2">
+                <input type="text" id="pc3" placeholder="Name 3">
+
+                <label>Vice President (Academic) Name:</label>
+                <input type="text" id="vpName">
+                <label>Vice President Date:</label>
+                <input type="date" id="vpDate">
+
+                <label>President Name:</label>
+                <input type="text" id="presName">
+                <label>President Date:</label>
+                <input type="date" id="presDate">
+
+                <br>
+                <button type="button" onclick="saveAssignment()">Save Assignment</button>
+                <button type="button" onclick="hideForm()">Cancel</button>
+            </form>
+        </div>
+
+        <!-- Saved Assignments List -->
+        <div id="list" style="margin-top: 40px;">
+            <h2>Saved Assignments</h2>
+            <div id="entries"></div>
+        </div>
+
+        <!-- Schedule Preview -->
+        <div id="preview" class="section">
+            <h2>Assignment Schedule Report</h2>
+            <div id="reportContent"></div>
+            <br>
+            <button onclick="window.print()">Print / Save as PDF</button>
+            <button onclick="hidePreview()">Close</button>
+        </div>
+
+        <!-- Marks Entry -->
+        <div id="marksEntry" class="section">
+            <h2>Enter Marks - <span id="marksTitle"></span></h2>
+            <div id="marksContent"></div>
+            <br>
+            <button onclick="saveMarks()">Save Marks</button>
+            <button onclick="hideMarksEntry()">Close</button>
+        </div>
+
+        <!-- Marksheet Preview -->
+        <div id="marksheet" class="section">
+            <h2>Assessment Marksheet</h2>
+            <div id="marksheetContent"></div>
+            <br>
+            <button onclick="window.print()">Print / Save as PDF</button>
+            <button onclick="hideMarksheet()">Close</button>
+        </div>
+
+        <!-- Analytics Dashboard -->
+        <div id="dashboard" class="section">
+            <h2>Student Analytics Dashboard</h2>
+            <label>Select Class:</label>
+            <select id="dashClass">
+                <option value="ET-1">ET-1</option>
+                <option value="ET-2">ET-2</option>
+            </select>
+            <button onclick="loadDashboard()">Load Dashboard</button>
+            <button onclick="hideDashboard()">Close</button>
+
+            <div id="dashSummary" style="margin-top:20px;"></div>
+            <canvas id="assignAvgChart" height="200"></canvas>
+            <h3>Student Ranking (Average % across completed assignments)</h3>
+            <div id="studentTable"></div>
+            <canvas id="studentChart" height="400"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const classStudents = {
+            "ET-1": [
+                {no:"1", title:"Miss", name:"M.D.Y.D. Perera", reg:"F/44"},
+                {no:"2", title:"Miss", name:"N.A.W.S.Nethsarani", reg:"F/109"},
+                {no:"3", title:"Miss", name:"M.M.C.P.Bandara", reg:"F/35"},
+                {no:"4", title:"Miss", name:"S.Y.Dewasurendra", reg:"F/34"},
+                {no:"5", title:"Miss", name:"W.A.P. Lakdini", reg:"F/36"},
+                {no:"6", title:"Miss", name:"W.D.S. Sewwandi", reg:"F/103"},
+                {no:"7", title:"Miss", name:"H.A.H. Umesha", reg:"F/108"},
+                {no:"8", title:"Miss", name:"E.B.M. Aththanayaka", reg:"F/151"},
+                {no:"9", title:"Miss", name:"K.V.N.Y.Rathnasinghe", reg:"F/186"},
+                {no:"10", title:"Miss", name:"K.K.I.Bagya", reg:"F/38"},
+                {no:"11", title:"Miss", name:"K.G.K.Sathsarani", reg:"F/66"},
+                {no:"12", title:"Miss", name:"L.A.H.L. Liyanaraachchi", reg:"F/193"},
+                {no:"13", title:"Miss", name:"W.L.M.P.D. Perera", reg:"F/67"},
+                {no:"14", title:"Miss", name:"J.P.C. Vilara", reg:"F/32"},
+                {no:"15", title:"Miss", name:"P.G.H.Wijini", reg:"F/206"},
+                {no:"16", title:"Miss", name:"V.G.D.Nirmani", reg:"F/202"},
+                {no:"17", title:"Miss", name:"U.W.S.T.K.Gunawardana", reg:"F/204"},
+                {no:"18", title:"Miss", name:"M.S.S.De Silva", reg:"F/208"},
+                {no:"19", title:"Mr", name:"P.Sarusan", reg:"M/04"},
+                {no:"20", title:"Mr", name:"N.M.P.I.Nagahawaththa", reg:"M/179"},
+                {no:"21", title:"Mr", name:"S.M.A.G.T.P. Samarasinghe", reg:"M/101"},
+                {no:"22", title:"Mr", name:"H.U.G. Jayasiri", reg:"M/128"},
+                {no:"23", title:"Mr", name:"H.M.Ushri", reg:"M/02"},
+                {no:"24", title:"Mr", name:"L.H.S.T. Srimal", reg:"M/191"},
+                {no:"25", title:"Mr", name:"K.G.A.S.Nawarathna", reg:"M/21"},
+                {no:"26", title:"Mr", name:"R.A.G.S.K.RAMANAYAKE", reg:"M/127"},
+                {no:"27", title:"Mr", name:"H.P.D.D. Rajapaksha", reg:"M/105"},
+                {no:"28", title:"Mr", name:"G.T.Y. Kalhara", reg:"M/192"},
+                {no:"29", title:"Mr", name:"W.M.G.N.JAYALATH", reg:"M/181"},
+                {no:"30", title:"Mr", name:"B.G.V.Thiyunuwan", reg:"M/197"},
+                {no:"31", title:"Mr", name:"S A D Madushanka", reg:"M/168"},
+                {no:"32", title:"Mr", name:"J.W.S.M.G.Madushanka", reg:"M/174"},
+                {no:"33", title:"Mr", name:"W.P.N.Dilhara", reg:"M/159"},
+                {no:"34", title:"Mr", name:"U.Qujinthan", reg:"M/211"},
+                {no:"35", title:"Mr", name:"R.Nitharshan", reg:"M/212"}
+            ],
+            "ET-2": [
+                {no:"1", title:"Mr", name:"W.R.A.V.D.Prasad", reg:"M/97"},
+                {no:"2", title:"Mr", name:"H.K.S.Sanajana", reg:"M/90"},
+                {no:"3", title:"Mr", name:"D.M.I.Dhimantha", reg:"M/27"},
+                {no:"4", title:"Mr", name:"K.Sinthujan", reg:"M/213"},
+                {no:"5", title:"Mr", name:"K.I.R.Dayananda", reg:"M/20"},
+                {no:"6", title:"Mr", name:"K.Adishek", reg:"M/199"},
+                {no:"7", title:"Mr", name:"A.Dineethan", reg:"M/196"},
+                {no:"8", title:"Mr", name:"K.H.M.Hirushan", reg:"M/194"},
+                {no:"9", title:"Mr", name:"C.J.V.Rathnayaka", reg:"M/19"},
+                {no:"10", title:"Mr", name:"R.M.P.D.Rajapaksha", reg:"M/167"},
+                {no:"11", title:"Mr", name:"N.N.H.I.Bandara", reg:"M/149"},
+                {no:"12", title:"Mr", name:"N.A.M.R.Gunasekara", reg:"M/13"},
+                {no:"13", title:"Mr", name:"H.M.J.S.Herath", reg:"M/126"},
+                {no:"14", title:"Mr", name:"T.D.K.L.Dilanka", reg:"M/12"},
+                {no:"15", title:"Mr", name:"S.N.G.Kulathunga", reg:"M/115"},
+                {no:"16", title:"Mr", name:"A.R.Razith", reg:"M/03"},
+                {no:"17", title:"Ms", name:"K.H.B.Kalatuwawa", reg:"F/69"},
+                {no:"18", title:"Ms", name:"J.D.L.Peiris", reg:"F/68"},
+                {no:"19", title:"Ms", name:"J.K.P.T.Rathnamali", reg:"F/65"},
+                {no:"20", title:"Ms", name:"T.Abirami", reg:"F/61"},
+                {no:"21", title:"Ms", name:"S.Visalini", reg:"F/54"},
+                {no:"22", title:"Ms", name:"G.W.W.M.Dilrukshi", reg:"F/42"},
+                {no:"23", title:"Ms", name:"S.D.J.Upeksha", reg:"F/37"},
+                {no:"24", title:"Ms", name:"S.I.Withanage", reg:"F/210"},
+                {no:"25", title:"Ms", name:"W.A.R.Kalpana", reg:"F/209"},
+                {no:"26", title:"Ms", name:"J.D.Prasadini", reg:"F/203"},
+                {no:"27", title:"Ms", name:"R.D.P.N.Samarasekara", reg:"F/200"},
+                {no:"28", title:"Ms", name:"S.P.Wijesena", reg:"F/198"},
+                {no:"29", title:"Ms", name:"W.G.A.Maheesha", reg:"F/195"},
+                {no:"30", title:"Ms", name:"M.G.C.M.Dayarathna", reg:"F/185"},
+                {no:"31", title:"Ms", name:"W.M.G.H.Wicramasingha", reg:"F/180"},
+                {no:"32", title:"Ms", name:"A.G.D.M.P.Karunathilaka", reg:"F/150"},
+                {no:"33", title:"Ms", name:"D.M.P.P.Dayarathna", reg:"F/134"},
+                {no:"34", title:"Ms", name:"S.A.D.A.Sewwandi", reg:"F/133"},
+                {no:"35", title:"Ms", name:"P.D.H.Tharaka", reg:"F/102"}
+            ]
+        };
+
+        let assignments = JSON.parse(localStorage.getItem('ncoet_assignments_v3')) || [];
+        let currentEdit = -1;
+        let currentMarksIndex = -1;
+
+        // Rubric functions
+        function addRubricRow(criterion = '', maxMarks = '') {
+            const tbody = document.querySelector('#rubricTable tbody');
+            const rowCount = tbody.rows.length + 1;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${rowCount}</td>
+                <td><input type="text" value="${criterion}" class="criterion"></td>
+                <td><input type="number" value="${maxMarks}" min="0" class="maxmarks"></td>
+                <td><button type="button" class="small" onclick="this.parentElement.parentElement.remove(); renumberRubrics()">Remove</button></td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        function renumberRubrics() {
+            const rows = document.querySelectorAll('#rubricTable tbody tr');
+            rows.forEach((row, i) => row.cells[0].textContent = i + 1);
+        }
+
+        function getRubrics() {
+            const rubrics = [];
+            document.querySelectorAll('#rubricTable tbody tr').forEach(row => {
+                const crit = row.querySelector('.criterion').value.trim();
+                const max = parseFloat(row.querySelector('.maxmarks').value) || 0;
+                if (crit && max > 0) rubrics.push({criterion: crit, maxMarks: max});
+            });
+            return rubrics;
+        }
+
+        function loadRubrics(rubrics) {
+            const tbody = document.querySelector('#rubricTable tbody');
+            tbody.innerHTML = '';
+            rubrics.forEach(r => addRubricRow(r.criterion, r.maxMarks));
+        }
+
+        // Form handlers
+        function showForm(index = -1) {
+            document.getElementById('formContainer').style.display = 'block';
+            document.getElementById('assignmentForm').reset();
+            document.querySelector('#rubricTable tbody').innerHTML = '';
+            document.getElementById('faculty').value = 'Engineering';
+            currentEdit = index;
+            if (index !== -1) loadAssignmentToForm(assignments[index]);
+            else addRubricRow();
+        }
+
+        function hideForm() {
+            document.getElementById('formContainer').style.display = 'none';
+        }
+
+        function loadAssignmentToForm(a) {
+            document.getElementById('program').value = a.program || '';
+            document.getElementById('semester').value = a.semester || '';
+            document.getElementById('assignClass').value = a.assignClass || 'ET-1';
+            document.getElementById('numAssignments').value = a.numAssignments || '';
+            document.getElementById('assignNum').value = a.assignNum || '';
+            document.getElementById('competency').value = a.competency || '';
+            document.getElementById('givenDate').value = a.givenDate || '';
+            document.getElementById('dueDate').value = a.dueDate || '';
+            document.getElementById('methodology').value = a.methodology || '';
+            document.getElementById('outcomes').value = a.outcomes || '';
+            document.getElementById('instructions').value = a.instructions || '';
+            document.getElementById('reviewedBy').value = a.reviewedBy || '';
+            document.getElementById('pc1').value = a.pc1 || '';
+            document.getElementById('pc2').value = a.pc2 || '';
+            document.getElementById('pc3').value = a.pc3 || '';
+            document.getElementById('vpName').value = a.vpName || '';
+            document.getElementById('vpDate').value = a.vpDate || '';
+            document.getElementById('presName').value = a.presName || '';
+            document.getElementById('presDate').value = a.presDate || '';
+            loadRubrics(a.rubrics || []);
+        }
+
+        function saveAssignment() {
+            const rubrics = getRubrics();
+            if (rubrics.length === 0) { alert('Add at least one rubric criterion'); return; }
+
+            const assign = {
+                program: document.getElementById('program').value.trim(),
+                semester: document.getElementById('semester').value.trim(),
+                faculty: 'Engineering',
+                assignClass: document.getElementById('assignClass').value,
+                numAssignments: document.getElementById('numAssignments').value,
+                assignNum: document.getElementById('assignNum').value,
+                competency: document.getElementById('competency').value.trim(),
+                givenDate: document.getElementById('givenDate').value,
+                dueDate: document.getElementById('dueDate').value,
+                methodology: document.getElementById('methodology').value.trim(),
+                outcomes: document.getElementById('outcomes').value.trim(),
+                instructions: document.getElementById('instructions').value.trim(),
+                rubrics: rubrics,
+                reviewedBy: document.getElementById('reviewedBy').value.trim(),
+                pc1: document.getElementById('pc1').value.trim(),
+                pc2: document.getElementById('pc2').value.trim(),
+                pc3: document.getElementById('pc3').value.trim(),
+                vpName: document.getElementById('vpName').value.trim(),
+                vpDate: document.getElementById('vpDate').value,
+                presName: document.getElementById('presName').value.trim(),
+                presDate: document.getElementById('presDate').value,
+                marks: assignments[currentEdit]?.marks || {}
+            };
+
+            if (currentEdit === -1) assignments.push(assign);
+            else assignments[currentEdit] = assign;
+
+            localStorage.setItem('ncoet_assignments_v3', JSON.stringify(assignments));
+            hideForm();
+            loadList();
+        }
+
+        // List
+        function loadList() {
+            const entries = document.getElementById('entries');
+            entries.innerHTML = '';
+            assignments.forEach((a, i) => {
+                const totalMax = a.rubrics ? a.rubrics.reduce((s,r) => s + r.maxMarks, 0) : 0;
+                const marked = a.marks ? Object.keys(a.marks).length : 0;
+                const div = document.createElement('div');
+                div.className = 'entry';
+                div.innerHTML = `
+                    <strong>${a.program || 'Untitled'} - ${a.assignClass} - Assignment ${a.assignNum || ''} (Total: ${totalMax} marks${marked ? ' | '+marked+' marked' : ''})</strong><br><br>
+                    <button onclick="viewSchedule(${i})">View Schedule</button>
+                    <button onclick="enterMarks(${i})">Enter/View Marks</button>
+                    <button onclick="viewMarksheet(${i})">View Marksheet</button>
+                    <button onclick="exportMarksCSV(${i})">Export Marks CSV</button>
+                    <button onclick="showForm(${i})">Edit</button>
+                    <button onclick="deleteAssignment(${i})">Delete</button>
+                `;
+                entries.appendChild(div);
+            });
+        }
+
+        function deleteAssignment(i) {
+            if (confirm('Delete this assignment and all its marks?')) {
+                assignments.splice(i, 1);
+                localStorage.setItem('ncoet_assignments_v3', JSON.stringify(assignments));
+                loadList();
+            }
+        }
+
+        // Preview sections
+        function viewSchedule(i) {
+            const a = assignments[i];
+            const total = a.rubrics.reduce((s,r)=>s+r.maxMarks,0);
+            const content = `
+                <h3>National College of Education on Technology, Kuliyapitiya</h3>
+                <h2>Assignment Schedule</h2>
+                <p><strong>Program:</strong> ${a.program} | <strong>Semester:</strong> ${a.semester} | <strong>Class:</strong> ${a.assignClass}</p>
+                <p><strong>Assignment ${a.assignNum} of ${a.numAssignments || '?'} | Total marks: ${total}</strong></p>
+                <p><strong>Theme:</strong><br>${(a.competency||'').replace(/\n/g,'<br>')}</p>
+                <p><strong>Dates:</strong> Given ${a.givenDate} | Due ${a.dueDate}</p>
+                <p><strong>Methodology:</strong><br>${(a.methodology||'').replace(/\n/g,'<br>')}</p>
+                <p><strong>Outcomes:</strong><br>${(a.outcomes||'').replace(/\n/g,'<br>')}</p>
+                <p><strong>Instructions:</strong><br>${(a.instructions||'').replace(/\n/g,'<br>')}</p>
+                <h3>Rubrics</h3>
+                <table><tr><th>Criterion</th><th>Max Marks</th></tr>
+                ${a.rubrics.map(r => `<tr><td>${r.criterion}</td><td>${r.maxMarks}</td></tr>`).join('')}
+                </table>
+                <p><strong>Reviewed by:</strong> ${a.reviewedBy}</p>
+                <p><strong>Program Committee:</strong> ${a.pc1||''} __________ ${a.pc2||''} __________ ${a.pc3||''} __________</p>
+                <p><strong>Vice President:</strong> ${a.vpName||''} Date: ${a.vpDate||''} __________</p>
+                <p><strong>President:</strong> ${a.presName||''} Date: ${a.presDate||''} __________</p>
+            `;
+            document.getElementById('reportContent').innerHTML = content;
+            document.getElementById('preview').style.display = 'block';
+        }
+
+        function hidePreview() { document.getElementById('preview').style.display = 'none'; }
+
+        // Marks entry
+        function enterMarks(i) {
+            currentMarksIndex = i;
+            const a = assignments[i];
+            document.getElementById('marksTitle').textContent = `${a.program} - ${a.assignClass} - Assignment ${a.assignNum}`;
+            const students = classStudents[a.assignClass];
+            const totalMax = a.rubrics.reduce((s,r)=>s+r.maxMarks,0);
+
+            let table = `<table>
+                <thead><tr><th>No</th><th>Name (Reg)</th>`;
+            a.rubrics.forEach(r => table += `<th>${r.criterion}<br>(max ${r.maxMarks})</th>`);
+            table += `<th>Total /${totalMax}</th><th>Comment</th></tr></thead><tbody>`;
+
+            students.forEach(st => {
+                const m = a.marks && a.marks[st.reg] ? a.marks[st.reg] : {scores: Array(a.rubrics.length).fill(''), comment: ''};
+                let rowTotal = m.scores.reduce((s,v) => s + (parseFloat(v)||0), 0);
+                table += `<tr>
+                    <td>${st.no}</td>
+                    <td>${st.title} ${st.name} (${st.reg})</td>`;
+                a.rubrics.forEach((r, ri) => {
+                    table += `<td><input type="number" min="0" max="${r.maxMarks}" class="marks-input" value="${m.scores[ri]||''}" onchange="calcRowTotal(this, ${totalMax})"></td>`;
+                });
+                table += `<td class="rowtotal">${rowTotal}</td>
+                    <td><textarea style="width:100%;height:60px;">${m.comment||''}</textarea></td>
+                </tr>`;
+            });
+            table += `</tbody></table>`;
+            document.getElementById('marksContent').innerHTML = table;
+            document.getElementById('marksEntry').style.display = 'block';
+        }
+
+        function calcRowTotal(input) {
+            const row = input.parentElement.parentElement;
+            const inputs = row.querySelectorAll('.marks-input');
+            let total = 0;
+            inputs.forEach(inp => total += parseFloat(inp.value) || 0);
+            row.querySelector('.rowtotal').textContent = total;
+        }
+
+        function saveMarks() {
+            if (currentMarksIndex === -1) return;
+            const a = assignments[currentMarksIndex];
+            const students = classStudents[a.assignClass];
+            const newMarks = {};
+            const rows = document.querySelectorAll('#marksContent tbody tr');
+            rows.forEach((row, idx) => {
+                const reg = students[idx].reg;
+                const scores = [];
+                row.querySelectorAll('.marks-input').forEach(inp => scores.push(inp.value));
+                const total = scores.reduce((s,v) => s + (parseFloat(v)||0), 0);
+                const comment = row.querySelector('textarea').value.trim();
+                if (total > 0 || comment) newMarks[reg] = {scores, total, comment};
+            });
+            a.marks = newMarks;
+            localStorage.setItem('ncoet_assignments_v3', JSON.stringify(assignments));
+            alert('Marks saved successfully');
+        }
+
+        function hideMarksEntry() {
+            document.getElementById('marksEntry').style.display = 'none';
+            currentMarksIndex = -1;
+        }
+
+        // Marksheet
+        function viewMarksheet(i) {
+            const a = assignments[i];
+            const students = classStudents[a.assignClass].sort((x,y) => parseInt(x.no) - parseInt(y.no));
+            const totalMax = a.rubrics.reduce((s,r)=>s+r.maxMarks,0);
+            let content = `
+                <h3>National College of Education on Technology, Kuliyapitiya</h3>
+                <h2>Assessment Marksheet</h2>
+                <p><strong>Program:</strong> ${a.program} | <strong>Class:</strong> ${a.assignClass} | <strong>Assignment:</strong> ${a.assignNum}</p>
+                <p><strong>Theme:</strong> ${a.competency}</p>
+                <table>
+                    <tr><th>No</th><th>Name (Reg)</th>`;
+            a.rubrics.forEach(r => content += `<th>${r.criterion}<br>(max ${r.maxMarks})</th>`);
+            content += `<th>Total /${totalMax}</th><th>Comment</th></tr>`;
+
+            students.forEach(st => {
+                const m = a.marks && a.marks[st.reg] ? a.marks[st.reg] : {scores: Array(a.rubrics.length).fill('-'), total: '-', comment: '-'};
+                content += `<tr><td>${st.no}</td><td>${st.title} ${st.name} (${st.reg})</td>`;
+                m.scores.forEach(s => content += `<td>${s || '-'}</td>`);
+                content += `<td>${m.total ?? '-'}</td><td>${m.comment || '-'}</td></tr>`;
+            });
+            content += `</table>`;
+            document.getElementById('marksheetContent').innerHTML = content;
+            document.getElementById('marksheet').style.display = 'block';
+        }
+
+        function hideMarksheet() { document.getElementById('marksheet').style.display = 'none'; }
+
+        // Export
+        function exportMarksCSV(i) {
+            const a = assignments[i];
+            if (!a.marks || Object.keys(a.marks).length === 0) { alert('No marks entered'); return; }
+            let csv = 'No,Title,Name,Reg';
+            a.rubrics.forEach(r => csv += `,"${r.criterion}"`);
+            csv += ',Total,Comment\n';
+
+            const students = classStudents[a.assignClass].sort((x,y)=>parseInt(x.no)-parseInt(y.no));
+            students.forEach(st => {
+                const m = a.marks[st.reg] || {scores: Array(a.rubrics.length).fill(''), total: '', comment: ''};
+                csv += `"${st.no}","${st.title}","${st.name}","${st.reg}"`;
+                m.scores.forEach(s => csv += `,"${s}"`);
+                csv += `,"${m.total}","${m.comment.replace(/"/g,'""')}"\n`;
+            });
+
+            const blob = new Blob([csv], {type: 'text/csv'});
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `Marks_${a.assignClass}_Assign${a.assignNum}.csv`;
+            link.click();
+        }
+
+        function exportAllCSV() {
+            let csv = 'ID,Program,Semester,Class,AssignNum,RubricsJSON,MarksJSON\n';
+            assignments.forEach((a,i) => {
+                csv += `${i},"${a.program}","${a.semester}","${a.assignClass}",${a.assignNum},"${JSON.stringify(a.rubrics).replace(/"/g,'""')}","${JSON.stringify(a.marks).replace(/"/g,'""')}"\n`;
+            });
+            const blob = new Blob([csv], {type: 'text/csv'});
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'NCOET_All_Assignments.csv';
+            link.click();
+        }
+
+        // Dashboard
+        function showDashboard() {
+            document.getElementById('dashboard').style.display = 'block';
+        }
+
+        function hideDashboard() {
+            document.getElementById('dashboard').style.display = 'none';
+        }
+
+        function loadDashboard() {
+            const selectedClass = document.getElementById('dashClass').value;
+            const classAssigns = assignments.filter(a => a.assignClass === selectedClass && a.marks && Object.keys(a.marks).length > 0);
+            if (classAssigns.length === 0) {
+                alert('No marked assignments found for ' + selectedClass);
+                return;
+            }
+
+            // Sort assignments by number
+            classAssigns.sort((a,b) => (a.assignNum || 0) - (b.assignNum || 0));
+
+            // Assignment averages chart
+            const assignLabels = classAssigns.map(a => `Assign ${a.assignNum}`);
+            const assignAvgs = classAssigns.map(a => {
+                const max = a.rubrics.reduce((s,r)=>s+r.maxMarks,0);
+                let sumPct = 0, count = 0;
+                Object.values(a.marks).forEach(m => {
+                    if (m.total > 0) {
+                        sumPct += (m.total / max) * 100;
+                        count++;
+                    }
+                });
+                return count > 0 ? (sumPct / count).toFixed(1) : 0;
+            });
+
+            const overallAvg = assignAvgs.length > 0 ? (assignAvgs.reduce((s,v)=>s+parseFloat(v),0) / assignAvgs.length).toFixed(1) : 0;
+            document.getElementById('dashSummary').innerHTML = `<strong>Class:</strong> ${selectedClass} | <strong>Assignments with marks:</strong> ${classAssigns.length} | <strong>Overall class average:</strong> ${overallAvg}%`;
+
+            if (window.assignChart) window.assignChart.destroy();
+            const ctx1 = document.getElementById('assignAvgChart').getContext('2d');
+            window.assignChart = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: assignLabels,
+                    datasets: [{
+                        label: 'Class Average %',
+                        data: assignAvgs,
+                        backgroundColor: 'rgba(0, 102, 204, 0.6)'
+                    }]
+                },
+                options: {
+                    scales: { y: { beginAtZero: true, max: 100 } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // Student stats
+            const students = classStudents[selectedClass];
+            const studentStats = students.map(st => {
+                let totalPct = 0, completed = 0;
+                classAssigns.forEach(a => {
+                    const m = a.marks[st.reg];
+                    if (m && m.total > 0) {
+                        const max = a.rubrics.reduce((s,r)=>s+r.maxMarks,0);
+                        totalPct += (m.total / max) * 100;
+                        completed++;
+                    }
+                });
+                const avgPct = completed > 0 ? (totalPct / completed).toFixed(2) : '0.00';
+                return { ...st, avgPct: parseFloat(avgPct), completed };
+            });
+
+            // Sort by average descending
+            studentStats.sort((a,b) => b.avgPct - a.avgPct);
+
+            // Table
+            let tableHtml = `<table>
+                <tr><th>Rank</th><th>No</th><th>Name (Reg. No)</th><th>Average %</th><th>Assignments Completed</th></tr>`;
+            studentStats.forEach((st, idx) => {
+                tableHtml += `<tr>
+                    <td>${idx+1}</td>
+                    <td>${st.no}</td>
+                    <td>${st.title} ${st.name} (${st.reg})</td>
+                    <td>${st.avgPct.toFixed(2)}%</td>
+                    <td>${st.completed} / ${classAssigns.length}</td>
+                </tr>`;
+            });
+            tableHtml += `</table>`;
+            document.getElementById('studentTable').innerHTML = tableHtml;
+
+            // Student bar chart (top 20 for readability)
+            const top20 = studentStats.slice(0, 20);
+            if (window.studentChart) window.studentChart.destroy();
+            const ctx2 = document.getElementById('studentChart').getContext('2d');
+            window.studentChart = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: top20.map(st => st.name.split(' ').slice(-1)[0] + ' (' + st.reg + ')'),
+                    datasets: [{
+                        label: 'Average %',
+                        data: top20.map(st => st.avgPct),
+                        backgroundColor: 'rgba(0, 170, 0, 0.6)'
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    scales: { x: { beginAtZero: true, max: 100 } },
+                    plugins: { title: { display: true, text: 'Top 20 Students by Average %' } }
+                }
+            });
+        }
+
+        loadList();
+    </script>
+</body>
+</html>

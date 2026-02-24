@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NCOET Kuliyapitiya - Student Attendance System</title>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --primary: #10b981;
+      --primary-dark: #059669;
+      --secondary: #0ea5e9;
+      --light: #f0fdfa;
+      --gray: #64748b;
+      --dark: #1e293b;
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #f0fdfa, #e0f7fa, #c5f1ff);
+      color: var(--dark);
+      min-height: 100vh;
+      padding: 1.5rem;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    header {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem 2rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+      margin-bottom: 2rem;
+    }
+    h1 {
+      font-size: 2.1rem;
+      background: linear-gradient(to right, var(--primary), #059669);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+      padding: 1.8rem;
+      margin-bottom: 1.8rem;
+    }
+    .btn {
+      padding: 0.9rem 1.6rem;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+    .btn-outline {
+      background: white;
+      border: 2px solid #e2e8f0;
+      color: var(--dark);
+    }
+    .btn-outline:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .btn-danger {
+      background: #ef4444;
+      color: white;
+    }
+    .btn-danger:hover {
+      background: #dc2626;
+    }
+    .grid {
+      display: grid;
+      gap: 1.25rem;
+    }
+    @media (min-width: 768px) {
+      .grid-1 { grid-template-columns: 1fr; }
+      .grid-2 { grid-template-columns: repeat(2, 1fr); }
+      .grid-3 { grid-template-columns: repeat(3, 1fr); }
+      .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    }
+    .session-item {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 1.25rem;
+      transition: all 0.2s;
+    }
+    .session-item:hover {
+      border-color: var(--primary);
+      box-shadow: 0 8px 20px rgba(16,185,129,0.12);
+    }
+    .badge {
+      padding: 0.35rem 0.9rem;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .badge-bst { background: #d1fae5; color: #065f46; }
+    .badge-it { background: #dbeafe; color: #1e40af; }
+    .badge-et { background: #fef3c7; color: #92400e; }
+    .alert {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 1000;
+      padding: 1rem 1.5rem;
+      border-radius: 10px;
+      color: white;
+      font-weight: 500;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+      animation: slideIn 0.4s ease;
+    }
+    .alert-success { background: #10b981; }
+    .alert-error { background: #ef4444; }
+    @keyframes slideIn {
+      from { transform: translateX(120%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .hidden { display: none !important; }
+    .form-control {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      border: 2px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 1rem;
+    }
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .student-card {
+      display: block;
+    }
+    .bulk-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      margin: 2rem 0;
+      padding: 1.5rem;
+      background: #f8fafc;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+    }
+    .qr-card {
+      text-align: center;
+      padding: 1.5rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: white;
+    }
+    .qr-card h3 { margin: 0.8rem 0 0.4rem; font-size: 1.1rem; }
+    .qr-card p { margin: 0; color: #64748b; font-family: monospace; }
+    #qr-scanner-modal {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    #qr-scanner-modal .modal-content {
+      background: white;
+      padding: 2rem;
+      border-radius: 16px;
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+    }
+    .chart-container {
+      position: relative;
+      height: 350px;
+      margin: 1.5rem 0;
+    }
+    .summary-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .summary-card {
+      background: #f8fafc;
+      padding: 1.5rem;
+      border-radius: 12px;
+      text-align: center;
+      border: 1px solid #e2e8f0;
+    }
+    .summary-card strong {
+      display: block;
+      font-size: 2rem;
+      margin-top: 0.5rem;
+      color: var(--primary);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      font-size: 0.95rem;
+    }
+    th, td {
+      padding: 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    th {
+      background: #f8fafc;
+      font-weight: 600;
+    }
+    .low-attendance {
+      background: #fef2f2;
+      color: #dc2626;
+      font-weight: 600;
+    }
+    @media (max-width: 768px) {
+      .chart-container {
+        height: 280px;
+      }
+      .grid-2 { grid-template-columns: 1fr; }
+      table {
+        font-size: 0.85rem;
+      }
+      th, td {
+        padding: 0.6rem;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+      <div>
+        <h1>NCOET Attendance tracker</h1>
+        <p style="color:#64748b;">National College of Education on Technology - Kuliyapitiya</p>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:1rem;">
+        <button class="btn btn-primary" onclick="showView('home')">
+          <i data-lucide="home" width="20"></i> Dashboard
+        </button>
+        <button class="btn btn-outline" onclick="showView('create')">
+          <i data-lucide="plus-circle" width="20"></i> New Session
+        </button>
+        <button class="btn btn-outline" onclick="showView('qr')">
+          <i data-lucide="qr-code" width="20"></i> Student QRs
+        </button>
+        <button class="btn btn-outline" onclick="showView('reports')">
+          <i data-lucide="bar-chart-3" width="20"></i> Reports
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div id="alertContainer"></div>
+
+  <div id="qr-scanner-modal" class="hidden">
+    <div class="modal-content">
+      <h2>Scan Student QR Code</h2>
+      <p>Point your camera at the student's QR code</p>
+      <div id="reader" style="width:300px; margin:1.5rem auto;"></div>
+      <button class="btn btn-danger" onclick="stopQRScanner()">Close Scanner</button>
+    </div>
+  </div>
+
+  <div id="view-home" class="view">
+    <div class="card">
+      <h2 style="margin-bottom:1.5rem; display:flex; align-items:center; gap:0.8rem;">
+        <i data-lucide="calendar" width="28"></i> Recent Lecture Sessions
+      </h2>
+      <div id="sessions-list" class="grid"></div>
+      <div id="no-sessions" style="text-align:center; padding:4rem 1rem; color:#94a3b8; display:none;">
+        <i data-lucide="calendar-x" width="64" style="opacity:0.4; margin-bottom:1.5rem;"></i>
+        <h3>No sessions created yet</h3>
+        <p style="margin-top:1rem;">Click "New Session" to start tracking attendance.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-create" class="view hidden">
+    <div class="card">
+      <h2 style="margin-bottom:1.8rem;">
+        <i data-lucide="plus-circle" width="28"></i> Create New Lecture Session
+      </h2>
+      <div class="grid grid-2" style="gap:1.5rem;">
+        <div>
+          <label style="display:block; margin-bottom:0.5rem; font-weight:600;">Class / Batch</label>
+          <select id="classBatch" class="form-control">
+            <option value="BST-1">BST Class 1</option>
+            <option value="BST-2">BST Class 2</option>
+            <option value="IT-1">IT Class 1</option>
+            <option value="IT-2">IT Class 2</option>
+            <option value="ET-1">ET Class 1</option>
+            <option value="ET-2">ET Class 2</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block; margin-bottom:0.5rem; font-weight:600;">Subject / Module</label>
+          <input type="text" id="subject" placeholder="e.g. Microbiology, Data Structures, Electronics" class="form-control"/>
+        </div>
+        <div>
+          <label style="display:block; margin-bottom:0.5rem; font-weight:600;">Lecturer Name</label>
+          <input type="text" id="lecturer" placeholder="Enter lecturer name" class="form-control"/>
+        </div>
+        <div>
+          <label style="display:block; margin-bottom:0.5rem; font-weight:600;">Date</label>
+          <input type="date" id="date" class="form-control"/>
+        </div>
+        <div>
+          <label style="display:block; margin-bottom:0.5rem; font-weight:600;">Start Time</label>
+          <input type="time" id="startTime" class="form-control"/>
+        </div>
+        <div>
+          <label style="display:block; margin-bottom:0.5rem; font-weight:600;">End Time</label>
+          <input type="time" id="endTime" class="form-control"/>
+        </div>
+      </div>
+      <div style="margin-top:2rem; display:flex; gap:1rem;">
+        <button class="btn btn-primary" onclick="createSession()">
+          <i data-lucide="save" width="20"></i> Create Session
+        </button>
+        <button class="btn btn-outline" onclick="showView('home')">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-qr" class="view hidden">
+    <div class="card">
+      <h2 style="margin-bottom:1.5rem; display:flex; align-items:center; gap:0.8rem;">
+        <i data-lucide="qr-code" width="28"></i> Generate Student QR Codes
+      </h2>
+      <div style="margin-bottom:1.5rem;">
+        <label style="display:block; margin-bottom:0.5rem; font-weight:600;">Select Class / Batch</label>
+        <select id="qr-class" class="form-control">
+          <option value="">-- Select Class --</option>
+          <option value="BST-1">BST Class 1</option>
+          <option value="BST-2">BST Class 2</option>
+          <option value="IT-1">IT Class 1</option>
+          <option value="IT-2">IT Class 2</option>
+          <option value="ET-1">ET Class 1</option>
+          <option value="ET-2">ET Class 2</option>
+        </select>
+      </div>
+      <div style="display:flex; gap:1rem; margin-bottom:2rem;">
+        <button class="btn btn-primary" onclick="generateStudentQRs()">
+          <i data-lucide="grid-3x3" width="20"></i> Generate QRs
+        </button>
+        <button class="btn btn-outline" onclick="window.print()">
+          <i data-lucide="printer" width="20"></i> Print / Save as PDF
+        </button>
+      </div>
+      <div id="qr-print-container" class="grid grid-4"></div>
+      <p id="qr-no-data" style="text-align:center; padding:2rem; color:#94a3b8;">Select a class and click "Generate QRs" to view cards.</p>
+    </div>
+  </div>
+
+  <div id="view-mark" class="view hidden">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
+        <h2 id="session-title"></h2>
+        <div style="display:flex; gap:0.8rem; flex-wrap:wrap;">
+          <button class="btn btn-outline" onclick="showView('home')">
+            <i data-lucide="arrow-left" width="18"></i> Back
+          </button>
+          <button class="btn btn-primary" onclick="startQRScanner()">
+            <i data-lucide="camera" width="18"></i> Scan QR
+          </button>
+          <button class="btn btn-primary" onclick="exportSessionCSV()">
+            <i data-lucide="download" width="18"></i> Export CSV
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-3" style="margin-bottom:2rem;">
+        <div class="card" style="background:#ecfdf5; border:1px solid #a7f3d0;">
+          <strong>Present</strong><br>
+          <span id="present-count" style="font-size:1.8rem; color:#059669;">0</span>
+        </div>
+        <div class="card" style="background:#fef2f2; border:1px solid #fecaca;">
+          <strong>Absent</strong><br>
+          <span id="absent-count" style="font-size:1.8rem; color:#dc2626;">0</span>
+        </div>
+        <div class="card" style="background:#eff6ff; border:1px solid #bfdbfe;">
+          <strong>Attendance %</strong><br>
+          <span id="percent" style="font-size:1.8rem; color:#2563eb;">0%</span>
+        </div>
+      </div>
+
+      <div class="bulk-actions">
+        <h3 style="width:100%; margin-bottom:1rem;">Bulk Actions</h3>
+        <button class="btn btn-primary" onclick="markAllPresent()">
+          <i data-lucide="users" width="18"></i> Mark All Present
+        </button>
+        <button class="btn btn-outline" onclick="markAllAbsent()">
+          <i data-lucide="user-x" width="18"></i> Mark All Absent
+        </button>
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+          <label for="import-file" style="font-weight:600;">Import CSV:</label>
+          <input type="file" id="import-file" accept=".csv,text/csv"/>
+          <button class="btn btn-primary" onclick="importAttendance()">
+            <i data-lucide="upload" width="18"></i> Import
+          </button>
+        </div>
+      </div>
+
+      <div style="margin:1.5rem 0;">
+        <input type="text" id="student-search" placeholder="Search by name or Reg No..." class="form-control" oninput="filterStudents()"/>
+      </div>
+      <div style="margin:1.5rem 0;">
+        <input type="text" id="manual-regno" placeholder="Quick mark: Enter Reg No" class="form-control"/>
+        <button class="btn btn-primary" onclick="markByRegNo()" style="margin-top:0.8rem; width:100%;">
+          Mark Present
+        </button>
+      </div>
+
+      <div id="student-list" class="grid grid-2 grid-3 grid-4"></div>
+    </div>
+  </div>
+
+  <div id="view-reports" class="view hidden">
+    <div class="card">
+      <h2 style="margin-bottom:1.5rem; display:flex; align-items:center; gap:0.8rem;">
+        <i data-lucide="bar-chart-3" width="28"></i> Attendance Reports & Trends
+      </h2>
+      <div style="margin-bottom:1.5rem;">
+        <label style="display:block; margin-bottom:0.5rem; font-weight:600;">Select Class / Batch</label>
+        <select id="report-class" class="form-control" onchange="renderReports()">
+          <option value="">-- Select Class --</option>
+          <option value="BST-1">BST Class 1</option>
+          <option value="BST-2">BST Class 2</option>
+          <option value="IT-1">IT Class 1</option>
+          <option value="IT-2">IT Class 2</option>
+          <option value="ET-1">ET Class 1</option>
+          <option value="ET-2">ET Class 2</option>
+        </select>
+      </div>
+
+      <div id="report-summary" class="summary-cards hidden"></div>
+
+      <div class="grid grid-1 grid-2">
+        <div class="card">
+          <h3 style="margin-bottom:1rem;">Class Attendance Trend Over Time</h3>
+          <div class="chart-container">
+            <canvas id="trendChart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <h3 style="margin-bottom:1rem;">Present vs Absent per Session</h3>
+          <div class="chart-container">
+            <canvas id="sessionBarChart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <h3 style="margin-bottom:1rem;">Per-Student Attendance %</h3>
+          <div class="chart-container">
+            <canvas id="studentBarChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:1rem; margin:2rem 0 1rem;">
+        <button class="btn btn-primary hidden" id="export-report-btn" onclick="exportReportCSV()">
+          <i data-lucide="download" width="18"></i> Export Detailed Report CSV
+        </button>
+      </div>
+
+      <table id="report-table" class="hidden">
+        <thead>
+          <tr>
+            <th>Reg No</th>
+            <th>Name</th>
+            <th>Total Sessions</th>
+            <th>Present</th>
+            <th>Absent</th>
+            <th>Attendance %</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p id="no-data" style="text-align:center; padding:2rem; color:#94a3b8;">Select a class to view reports and trends.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// Full student database with all names and reg nos
+const studentsByClass = {
+  "BST-1": [
+    { reg: "Kuli/NCoET/2023/BST/M/07", short: "A.Arthikan" },
+    { reg: "Kuli/NCoET/2023/BST/F/40", short: "M.L.N.Rasangani" },
+    { reg: "Kuli/NCoET/2023/BST/F/48", short: "M.W.G.H.Ekanayake" },
+    { reg: "Kuli/NCoET/2023/BST/F/52", short: "J.H.M.N.Jayakodi" },
+    { reg: "Kuli/NCoET/2023/BST/F/53", short: "L.A.J.Nayanathara" },
+    { reg: "Kuli/NCoET/2023/BST/F/70", short: "J.F.Afra" },
+    { reg: "Kuli/NCoET/2023/BST/F/72", short: "A.H.F.Rijan" },
+    { reg: "Kuli/NCoET/2023/BST/F/73", short: "A.F.Asja" },
+    { reg: "Kuli/NCoET/2023/BST/F/74", short: "P.A.A.N.P.Arachchi" },
+    { reg: "Kuli/NCoET/2023/BST/F/75", short: "H.A.D.Malshani" },
+    { reg: "Kuli/NCoET/2023/BST/F/76", short: "G.N.E.Bandara" },
+    { reg: "Kuli/NCoET/2023/BST/F/77", short: "M.D.S.Ranaweera" },
+    { reg: "Kuli/NCoET/2023/BST/F/78", short: "K.K.R.R.Pushpamali" },
+    { reg: "Kuli/NCoET/2023/BST/F/82", short: "A.M.S.Devid" },
+    { reg: "Kuli/NCoET/2023/BST/F/84", short: "U.G.C.D.Rathnayaka" },
+    { reg: "Kuli/NCoET/2023/BST/F/85", short: "A.G.N.A.Karunarathna" },
+    { reg: "Kuli/NCoET/2023/BST/F/86", short: "M.R.H.S.Chathurangi" },
+    { reg: "Kuli/NCoET/2023/BST/F/87", short: "D.H.G.K.Madushani" },
+    { reg: "Kuli/NCoET/2023/BST/F/88", short: "N.J.A.Karunarathne" },
+    { reg: "Kuli/NCoET/2023/BST/F/89", short: "A.G.A.Dishanee" },
+    { reg: "Kuli/NCoET/2023/BST/F/100", short: "I.D.P.Thilakawardhana" },
+    { reg: "Kuli/NCoET/2023/BST/F/106", short: "M.M.F.Mahira" },
+    { reg: "Kuli/NCoET/2023/BST/F/110", short: "V.G.A.Charuni" },
+    { reg: "Kuli/NCoET/2023/BST/F/111", short: "J.A.N.K.Jayasuriya" },
+    { reg: "Kuli/NCoET/2023/BST/F/114", short: "U.C.N.Wijesinghe" },
+    { reg: "Kuli/NCoET/2023/BST/F/120", short: "K.G.E.Amalja" },
+    { reg: "Kuli/NCoET/2023/BST/F/122", short: "A.D.K.Ranasinghe" },
+    { reg: "Kuli/NCoET/2023/BST/F/123", short: "H.H.H.K.Karunarathne" },
+    { reg: "Kuli/NCoET/2023/BST/F/124", short: "W.K.D.T.N.Nayanathara" },
+    { reg: "Kuli/NCoET/2023/BST/F/132", short: "N.A.S.A.Sathsarani" },
+    { reg: "Kuli/NCoET/2023/BST/F/153", short: "K.P.S.Alwis" },
+    { reg: "Kuli/NCoET/2023/BST/F/157", short: "D.P.Weerathunga" },
+    { reg: "Kuli/NCoET/2023/BST/F/171", short: "V.Harsha" },
+    { reg: "Kuli/NCoET/2023/ET/F/201", short: "S.P.J.P.Jayasiri" }
+  ],
+  "BST-2": [
+    { reg: "Kuli/NCoET/2023/BST/M/06", short: "S.Sujanthan" },
+    { reg: "Kuli/NCoET/2023/BST/F/30", short: "R.Bavasamini" },
+    { reg: "Kuli/NCoET/2023/BST/F/31", short: "A.Kisha Mecktalin" },
+    { reg: "Kuli/NCoET/2023/BST/F/45", short: "K.W.D.I.Keballawita" },
+    { reg: "Kuli/NCoET/2023/BST/F/46", short: "T.G.H.Kalpana" },
+    { reg: "Kuli/NCoET/2023/BST/F/50", short: "T.S.Hansika" },
+    { reg: "Kuli/NCoET/2023/BST/F/62", short: "A.K.Fathima.Sifa" },
+    { reg: "Kuli/NCoET/2023/BST/F/71", short: "M.I.F.Minha" },
+    { reg: "Kuli/NCoET/2023/BST/F/79", short: "L.C.Hasini" },
+    { reg: "Kuli/NCoET/2023/BST/F/80", short: "L.P.S.S.G.Senarathne" },
+    { reg: "Kuli/NCoET/2023/BST/F/81", short: "W.A.S.Wanigasekara" },
+    { reg: "Kuli/NCoET/2023/BST/M/95", short: "D.M.I.Dilshan" },
+    { reg: "Kuli/NCoET/2023/BST/F/98", short: "H.G.L.Udathari" },
+    { reg: "Kuli/NCoET/2023/BST/F/99", short: "H.H.K.G.Rathnayake" },
+    { reg: "Kuli/NCoET/2023/BST/F/107", short: "K.P.M.Vidyarathne" },
+    { reg: "Kuli/NCoET/2023/BST/F/112", short: "P.Kishalini" },
+    { reg: "Kuli/NCoET/2023/BST/F/113", short: "P.P.S.Rajapaksha" },
+    { reg: "Kuli/NCoET/2023/BST/F/116", short: "M.J.H.Musna" },
+    { reg: "Kuli/NCoET/2023/BST/F/117", short: "M.F.A.Suhadha" },
+    { reg: "Kuli/NCoET/2023/BST/F/118", short: "M.R.Risma" },
+    { reg: "Kuli/NCoET/2023/BST/F/119", short: "A.M.S.Ayoddhya" },
+    { reg: "Kuli/NCoET/2023/BST/F/121", short: "S.V.A.M.Kaushani" },
+    { reg: "Kuli/NCoET/2023/BST/F/125", short: "D.M.S.N.Bandara" },
+    { reg: "Kuli/NCoET/2023/BST/F/148", short: "N.D.S.N.D.Balasuriya" },
+    { reg: "Kuli/NCoET/2023/BST/F/152", short: "M.I.N.Shahani" },
+    { reg: "Kuli/NCoET/2023/BST/F/156", short: "W.P.U.S.Wickramasinghe" },
+    { reg: "Kuli/NCoET/2023/BST/F/160", short: "M.G.A.S.Perera" },
+    { reg: "Kuli/NCoET/2023/BST/F/163", short: "I.G.S.D.Dewmini" },
+    { reg: "Kuli/NCoET/2023/BST/F/173", short: "D.S.Sithusa" },
+    { reg: "Kuli/NCoET/2023/BST/F/176", short: "G.G.A.A.Kumarasinghe" },
+    { reg: "Kuli/NCoET/2023/BST/F/177", short: "R.D.A.A.Premarathne" },
+    { reg: "Kuli/NCoET/2023/BST/F/187", short: "K.P.K.Gunawardana" },
+    { reg: "Kuli/NCoET/2023/BST/F/188", short: "W.A.R.S.H.Pathirana" },
+    { reg: "Kuli/NCoET/2023/BST/F/189", short: "Z.F.Masajidha" },
+    { reg: "Kuli/NCoET/2023/ET/F/205", short: "S.Gaayathiri" }
+  ],
+  "IT-1": [
+    { reg: "Kuli/NCoET/2023/IT/M/01", short: "B.M.B.M.Bandara" },
+    { reg: "Kuli/NCoET/2023/IT/M/09", short: "S.Tharsan" },
+    { reg: "Kuli/NCoET/2023/IT/M/10", short: "V.Kaviyarasan" },
+    { reg: "Kuli/NCoET/2023/IT/M/11", short: "P.Keyuse" },
+    { reg: "Kuli/NCoET/2023/IT/M/14", short: "S.A.N.C.Jayashanka" },
+    { reg: "Kuli/NCoET/2023/IT/M/15", short: "H.M.V.P.Bandara" },
+    { reg: "Kuli/NCoET/2023/IT/M/16", short: "K.U.T.D.Senanayaka" },
+    { reg: "Kuli/NCoET/2023/IT/M/22", short: "P.Y.G.S.Sangeeth" },
+    { reg: "Kuli/NCoET/2023/IT/M/24", short: "T.Sandeepa" },
+    { reg: "Kuli/NCoET/2023/IT/M/26", short: "M.M.H.P.B.Kumara" },
+    { reg: "Kuli/NCoET/2023/IT/M/28", short: "O.C.A.Maarachchi" },
+    { reg: "Kuli/NCoET/2023/IT/F/56", short: "R.P.H.Sadakalani" },
+    { reg: "Kuli/NCoET/2023/IT/F/57", short: "K.H.Kinkini" },
+    { reg: "Kuli/NCoET/2023/IT/F/58", short: "J.M.S.Prabodya" },
+    { reg: "Kuli/NCoET/2023/IT/F/60", short: "W.D.W.Pradeepanee" },
+    { reg: "Kuli/NCoET/2023/IT/M/92", short: "E.P.B.K.Gunawardana" },
+    { reg: "Kuli/NCoET/2023/IT/F/93", short: "B.M.N.K.Ranasinghe" },
+    { reg: "Kuli/NCoET/2023/IT/F/94", short: "P.D.I.Sewwandi" },
+    { reg: "Kuli/NCoET/2023/IT/F/130", short: "H.A.S.Sahasna" },
+    { reg: "Kuli/NCoET/2023/IT/F/136", short: "M.A.F.Asna" },
+    { reg: "Kuli/NCoET/2023/IT/F/138", short: "K.G.V.B.M.Jayarathna" },
+    { reg: "Kuli/NCoET/2023/IT/F/139", short: "N.H.A.H.Pramodya" },
+    { reg: "Kuli/NCoET/2023/IT/F/140", short: "R.M.A.D.Rathnayaka" },
+    { reg: "Kuli/NCoET/2023/IT/F/142", short: "M.G.M.P.Tennakoon" },
+    { reg: "Kuli/NCoET/2023/IT/F/143", short: "B.Sameena" },
+    { reg: "Kuli/NCoET/2023/IT/F/144", short: "M.J.Ranasinghe" },
+    { reg: "Kuli/NCoET/2023/IT/F/145", short: "B.N.Nawodya" },
+    { reg: "Kuli/NCoET/2023/IT/M/146", short: "A.N.Muthumala" },
+    { reg: "Kuli/NCoET/2023/IT/F/147", short: "V.G.S.Sathnara" },
+    { reg: "Kuli/NCoET/2023/IT/F/164", short: "P V R Pabodha" },
+    { reg: "Kuli/NCoET/2023/IT/F/165", short: "N H I T A Wijeweera" },
+    { reg: "Kuli/NCoET/2023/IT/F/169", short: "M D T Harischandra" },
+    { reg: "Kuli/NCoET/2023/IT/F/178", short: "H.E.P. Sanjana" },
+    { reg: "Kuli/NCoET/2023/IT/M/183", short: "R.M.I.P. Rathnayaka" }
+  ],
+  "IT-2": [
+    { reg: "Kuli/NCoET/2023/IT/M/05", short: "K.Kajanan" },
+    { reg: "Kuli/NCoET/2023/IT/M/08", short: "M.R.M.Shamil" },
+    { reg: "Kuli/NCoET/2023/IT/M/17", short: "M.P.I.Kaushalya" },
+    { reg: "Kuli/NCoET/2023/IT/M/18", short: "S.W.T.P.Damsara" },
+    { reg: "Kuli/NCoET/2023/IT/M/23", short: "P.D.Deshapriya" },
+    { reg: "Kuli/NCoET/2023/IT/M/25", short: "R.P.V.S.N.Randunu" },
+    { reg: "Kuli/NCoET/2023/IT/M/29", short: "B.C.D.Weerasinghe" },
+    { reg: "Kuli/NCoET/2023/IT/F/33", short: "K.G.G.D.T.D.Wijerathna" },
+    { reg: "Kuli/NCoET/2023/IT/F/39", short: "H.A.N.Kaveesha" },
+    { reg: "Kuli/NCoET/2023/IT/F/41", short: "P.N.Dilshani" },
+    { reg: "Kuli/NCoET/2023/IT/F/43", short: "W.A.M.S.Deshani" },
+    { reg: "Kuli/NCoET/2023/IT/F/47", short: "P.G.H.S.Wijerathna" },
+    { reg: "Kuli/NCoET/2023/IT/F/49", short: "M.G.S.U.Jayathilaka" },
+    { reg: "Kuli/NCoET/2023/IT/F/51", short: "M.C.F.Leena" },
+    { reg: "Kuli/NCoET/2023/IT/F/55", short: "S.Janu" },
+    { reg: "Kuli/NCoET/2023/IT/F/59", short: "M.K.R.N.Wijerathna" },
+    { reg: "Kuli/NCoET/2023/IT/F/63", short: "A.D.M.A.Himasha" },
+    { reg: "Kuli/NCoET/2023/IT/F/64", short: "S.S.Koswatta" },
+    { reg: "Kuli/NCoET/2023/IT/M/91", short: "I.H.T.N.Kumarathilaka" },
+    { reg: "Kuli/NCoET/2023/IT/M/96", short: "W.M.P.Sandaruwan" },
+    { reg: "Kuli/NCoET/2023/IT/M/104", short: "J.W.H.D.Bandara" },
+    { reg: "Kuli/NCoET/2023/IT/M/129", short: "T.Kavishan" },
+    { reg: "Kuli/NCoET/2023/IT/F/131", short: "A.G.N.N.Darmarathna" },
+    { reg: "Kuli/NCoET/2023/IT/F/135", short: "R.A.N.H. Ranaweera" },
+    { reg: "Kuli/NCoET/2023/IT/F/137", short: "S.P.S.H.P.Wickramasinghe" },
+    { reg: "Kuli/NCoET/2023/IT/M/155", short: "G W G Tharushika" },
+    { reg: "Kuli/NCoET/2023/IT/F/158", short: "M A K Thedini" },
+    { reg: "Kuli/NCoET/2023/IT/F/161", short: "H B S Hansana" },
+    { reg: "Kuli/NCoET/2023/IT/F/170", short: "G G A I Wickramanayake" },
+    { reg: "Kuli/NCoET/2023/IT/F/172", short: "K.A.T Sandunika" },
+    { reg: "Kuli/NCoET/2023/IT/F/175", short: "L.P.J.Vidushani" },
+    { reg: "Kuli/NCoET/2023/IT/M/182", short: "K.Kavindu Bhanuka" },
+    { reg: "Kuli/NCoET/2023/IT/F/207", short: "B.L. Sajini Sulakshani" },
+    { reg: "Kuli/NCoET/2023/IT/M/215", short: "W.A.P.S.O. Wickramathunga" }
+  ],
+  "ET-1": [
+    { reg: "Kuli/NCoET/2023/ET/M/02", short: "H.M.Ushrif" },
+    { reg: "Kuli/NCoET/2023/ET/M/03", short: "Ar Razith" },
+    { reg: "Kuli/NCoET/2023/ET/M/04", short: "T.Sarusan" },
+    { reg: "Kuli/NCoET/2023/ET/M/12", short: "T.D.K. Lahiru Dilanka" },
+    { reg: "Kuli/NCoET/2023/ET/M/13", short: "N.A.M.R.Gunasekara" },
+    { reg: "Kuli/NCoET/2023/ET/M/19", short: "C J V Rathnayaka" },
+    { reg: "Kuli/NCoET/2023/ET/M/20", short: "K.I.R. Dayananda" },
+    { reg: "Kuli/NCoET/2023/ET/M/21", short: "K.G.A.S.Nawarathna" },
+    { reg: "Kuli/NCoET/2023/ET/M/27", short: "D.M Indumina Dhimantha" },
+    { reg: "Kuli/NCoET/2023/ET/F/32", short: "J.P Chamudi Vilara" },
+    { reg: "Kuli/NCoET/2023/ET/F/34", short: "S.Y.Dewasurendra" },
+    { reg: "Kuli/NCoET/2023/ET/F/35", short: "M.M.C.P.Bandara" },
+    { reg: "Kuli/NCoET/2023/ET/F/36", short: "W.A.Pabasara Lakdini" },
+    { reg: "Kuli/NCoET/2023/ET/F/37", short: "S.D.Janudi Upeksha" },
+    { reg: "Kuli/NCoET/2023/ET/F/38", short: "K.K.I.Bhagya" },
+    { reg: "Kuli/NCoET/2023/ET/F/42", short: "G.W.W.M.Dilrukshi" },
+    { reg: "Kuli/NCoET/2023/ET/F/44", short: "M.D.Yasodhara Darshi Perera" },
+    { reg: "Kuli/NCoET/2023/ET/F/54", short: "Visalini S" },
+    { reg: "Kuli/NCoET/2023/ET/F/61", short: "T. Abirami" },
+    { reg: "Kuli/NCoET/2023/ET/F/65", short: "J.K.P. Thrilakshana Rathnamali" },
+    { reg: "Kuli/NCoET/2023/ET/F/66", short: "K . G . K . Sathsarani" },
+    { reg: "Kuli/NCoET/2023/ET/F/67", short: "W.L.M.P.D.Perera" },
+    { reg: "Kuli/NCoET/2023/ET/F/68", short: "J.D.L.Peiris" },
+    { reg: "Kuli/NCoET/2023/ET/F/69", short: "K.H.B.Kalatuwawa" },
+    { reg: "Kuli/NCoET/2023/ET/M/90", short: "H. K. S. Ranjana" },
+    { reg: "Kuli/NCoET/2023/ET/M/97", short: "W.R.A.V.D.Prashad" },
+    { reg: "Kuli/NCoET/2023/ET/M/101", short: "S.M.A.G Theshan Prabashwara Samarasingha" },
+    { reg: "Kuli/NCoET/2023/ET/F/102", short: "P.D.Hiruni Tharaka" },
+    { reg: "Kuli/NCoET/2023/ET/F/103", short: "W.D.S.Sewwandi" },
+    { reg: "Kuli/NCoET/2023/ET/M/105", short: "H.P Danidu Dishan Rajapaksha" },
+    { reg: "Kuli/NCoET/2023/ET/F/108", short: "H.A.Hashini Umesha" },
+    { reg: "Kuli/NCoET/2023/ET/F/109", short: "N.A.W.S. Nethsarani" },
+    { reg: "Kuli/NCoET/2023/ET/M/115", short: "S.Nawum Geethaka Kulathunga" },
+    { reg: "Kuli/NCoET/2023/ET/M/126", short: "H.M.J.Sithuminda" },
+    { reg: "Kuli/NCoET/2023/ET/M/127", short: "R.A.G.S.K.Ramanayake" }
+  ],
+  "ET-2": [
+    { reg: "Kuli/NCoET/2023/ET/M/128", short: "H. Uditha Gayan Jayasiri" },
+    { reg: "Kuli/NCoET/2023/ET/F/133", short: "S.A.D.A Sewwandi" },
+    { reg: "Kuli/NCoET/2023/ET/F/134", short: "D.M.P.P. Dayarathna" },
+    { reg: "Kuli/NCoET/2023/ET/M/149", short: "N M Hasan Indrajith Bandara" },
+    { reg: "Kuli/NCoET/2023/ET/F/150", short: "A.G.D.M.Poornima Karunathilaka" },
+    { reg: "Kuli/NCoET/2023/ET/F/151", short: "Aththanayaka E.B.M" },
+    { reg: "Kuli/NCoET/2023/ET/M/159", short: "W.P.N. Dilhara" },
+    { reg: "Kuli/NCoET/2023/ET/M/167", short: "R.M.Pasindu Dilmith Rajapaksha" },
+    { reg: "Kuli/NCoET/2023/ET/M/168", short: "S A Dushan Madushanka" },
+    { reg: "Kuli/NCoET/2023/ET/M/174", short: "J.W.S.M.G.M.Mahanthe" },
+    { reg: "Kuli/NCoET/2023/ET/M/179", short: "N.M.Pasindu Indrachapa Nagahawaththa" },
+    { reg: "Kuli/NCoET/2023/ET/F/180", short: "W.M.G.H.Wickramasingha" },
+    { reg: "Kuli/NCoET/2023/ET/M/181", short: "W.M.G.N.Jayalath" },
+    { reg: "Kuli/NCoET/2023/ET/F/185", short: "M.G.C.M Dayarathna" },
+    { reg: "Kuli/NCoET/2023/ET/F/186", short: "K.V.N.Y.Rathnasinghe" },
+    { reg: "Kuli/NCoET/2023/ET/M/191", short: "L.H Supun Thimothi Srimal Fernando" },
+    { reg: "Kuli/NCoET/2023/ET/M/192", short: "G.L.Y.Kalhara" },
+    { reg: "Kuli/NCoET/2023/ET/M/193", short: "L.A. Hirunima Lakshani Liyanaarachchi" },
+    { reg: "Kuli/NCoET/2023/ET/M/194", short: "K.H.M.Hiroshan" },
+    { reg: "Kuli/NCoET/2023/ET/M/195", short: "W.G.Ashini Maheesha" },
+    { reg: "Kuli/NCoET/2023/ET/M/196", short: "Dineethan. A" },
+    { reg: "Kuli/NCoET/2023/ET/M/197", short: "B.G Vimukthi Thiyunuwan" },
+    { reg: "Kuli/NCoET/2023/ET/M/198", short: "S.P.Wijesena" },
+    { reg: "Kuli/NCoET/2023/ET/M/199", short: "K.Abishek" },
+    { reg: "Kuli/NCoET/2023/ET/M/200", short: "R.D.P.N.Samarasekara" },
+    { reg: "Kuli/NCoET/2023/ET/M/202", short: "V G Dilki Nirmani" },
+    { reg: "Kuli/NCoET/2023/ET/M/203", short: "J.Dinushika Prasadini" },
+    { reg: "Kuli/NCoET/2023/ET/M/204", short: "U.W.S.T.K.Gunawardhana" },
+    { reg: "Kuli/NCoET/2023/ET/M/206", short: "P.G.H.Vijini" },
+    { reg: "Kuli/NCoET/2023/ET/M/208", short: "M.Sankalapana Sugandhini De Silva" },
+    { reg: "Kuli/NCoET/2023/ET/M/209", short: "W.A.Rashmi Kalpana" },
+    { reg: "Kuli/NCoET/2023/ET/M/210", short: "S I Withanage" },
+    { reg: "Kuli/NCoET/2023/ET/M/211", short: "U.Qujinthan" },
+    { reg: "Kuli/NCoET/2023/ET/M/212", short: "R.Nitharshan" },
+    { reg: "Kuli/NCoET/2023/ET/M/213", short: "K.Sinthujan" }
+  ]
+};
+
+let sessions = JSON.parse(localStorage.getItem("ncoet_sessions") || "[]");
+let currentSessionId = null;
+let qrScanner = null;
+let trendChart = null;
+let sessionBarChart = null;
+let studentBarChart = null;
+
+function showView(viewName) {
+  document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+  document.getElementById(`view-${viewName}`).classList.remove('hidden');
+  if (viewName === 'home') renderSessions();
+  if (viewName === 'mark') renderMarkingView();
+  if (viewName === 'reports') renderReports();
+  if (viewName === 'qr') {
+    document.getElementById('qr-print-container').innerHTML = '';
+    document.getElementById('qr-no-data').style.display = 'block';
+  }
+  lucide.createIcons();
+}
+
+function showAlert(msg, type = 'success') {
+  const div = document.createElement('div');
+  div.className = `alert alert-${type}`;
+  div.textContent = msg;
+  document.getElementById('alertContainer').appendChild(div);
+  setTimeout(() => div.remove(), 5000);
+}
+
+function saveSessions() {
+  localStorage.setItem("ncoet_sessions", JSON.stringify(sessions));
+}
+
+function createSession() {
+  const classBatch = document.getElementById('classBatch').value;
+  const subject = document.getElementById('subject').value.trim();
+  const lecturer = document.getElementById('lecturer').value.trim();
+  const date = document.getElementById('date').value;
+  const startTime = document.getElementById('startTime').value;
+  const endTime = document.getElementById('endTime').value;
+
+  if (!classBatch || !subject || !lecturer || !date || !startTime || !endTime) {
+    showAlert("Please fill all fields", "error");
+    return;
+  }
+
+  const session = {
+    id: Date.now(),
+    classBatch,
+    subject,
+    lecturer,
+    date,
+    startTime,
+    endTime,
+    attendance: {}
+  };
+  sessions.unshift(session);
+  saveSessions();
+  showAlert("Session created successfully!");
+  showView('home');
+}
+
+function renderSessions() {
+  const container = document.getElementById('sessions-list');
+  container.innerHTML = '';
+  if (sessions.length === 0) {
+    document.getElementById('no-sessions').style.display = 'block';
+    return;
+  }
+  document.getElementById('no-sessions').style.display = 'none';
+
+  sessions.forEach(s => {
+    const students = studentsByClass[s.classBatch] || [];
+    const presentCount = Object.keys(s.attendance).length;
+    const total = students.length;
+    const percent = total > 0 ? Math.round((presentCount / total) * 100) : 0;
+
+    const div = document.createElement('div');
+    div.className = 'session-item';
+    div.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:start; gap:1rem;">
+        <div>
+          <h3>${s.subject}</h3>
+          <div style="display:flex; gap:0.8rem; flex-wrap:wrap; margin:0.6rem 0;">
+            <span class="badge badge-${s.classBatch.split('-')[0].toLowerCase()}">${s.classBatch}</span>
+            <span style="color:#64748b;">${s.date} • ${s.startTime} – ${s.endTime}</span>
+          </div>
+          <div>Lecturer: <strong>${s.lecturer}</strong></div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:2rem; color:var(--primary); font-weight:700;">${presentCount} / ${total}</div>
+          <div style="color:#059669; font-weight:600;">${percent}%</div>
+        </div>
+      </div>
+      <div style="margin-top:1.2rem; display:flex; gap:0.8rem;">
+        <button class="btn btn-primary" onclick="openMarking(${s.id})">Mark Attendance</button>
+        <button class="btn btn-outline" onclick="exportSessionCSV(${s.id})">CSV</button>
+        <button class="btn btn-danger" onclick="deleteSession(${s.id})">Delete</button>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+  lucide.createIcons();
+}
+
+function openMarking(id) {
+  currentSessionId = id;
+  showView('mark');
+}
+
+function generateStudentQRs() {
+  const classBatch = document.getElementById('qr-class').value;
+  if (!classBatch) {
+    showAlert("Please select a class", "error");
+    return;
+  }
+  const container = document.getElementById('qr-print-container');
+  container.innerHTML = '';
+  document.getElementById('qr-no-data').style.display = 'none';
+
+  let students = studentsByClass[classBatch] || [];
+  students = students.sort((a, b) => a.short.localeCompare(b.short));
+
+  students.forEach(st => {
+    const card = document.createElement('div');
+    card.className = 'qr-card';
+    const qrDiv = document.createElement('div');
+    card.innerHTML = `<h3>${st.short}</h3><p>${st.reg}</p>`;
+    card.appendChild(qrDiv);
+    container.appendChild(card);
+    new QRCode(qrDiv, {
+      text: st.reg,
+      width: 180,
+      height: 180,
+      correctLevel: QRCode.CorrectLevel.H
+    });
+  });
+  showAlert(`QR codes generated for ${classBatch} (${students.length} students)`);
+}
+
+function startQRScanner() {
+  document.getElementById('qr-scanner-modal').classList.remove('hidden');
+  qrScanner = new Html5Qrcode("reader");
+  qrScanner.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: { width: 250, height: 250 } },
+    (decodedText) => {
+      markStudent(decodedText.trim());
+      showAlert("Marked present!");
+      stopQRScanner();
+    },
+    () => {}
+  ).catch(() => showAlert("Camera access denied", "error"));
+}
+
+function stopQRScanner() {
+  if (qrScanner) {
+    qrScanner.stop().then(() => qrScanner.clear());
+    qrScanner = null;
+  }
+  document.getElementById('qr-scanner-modal').classList.add('hidden');
+}
+
+function markStudent(regNo) {
+  const session = sessions.find(s => s.id === currentSessionId);
+  if (session) {
+    const student = studentsByClass[session.classBatch].find(st => st.reg === regNo);
+    if (student) {
+      session.attendance[regNo] = true;
+      saveSessions();
+      renderMarkingView();
+    } else {
+      showAlert("Invalid Reg No for this class", "error");
+    }
+  }
+}
+
+function renderMarkingView() {
+  const session = sessions.find(s => s.id === currentSessionId);
+  if (!session) return showView('home');
+  document.getElementById('session-title').textContent = `${session.subject} - ${session.classBatch} (${session.date})`;
+
+  const students = studentsByClass[session.classBatch] || [];
+  const presentCount = Object.keys(session.attendance).length;
+  const percent = students.length > 0 ? Math.round((presentCount / students.length) * 100) : 0;
+
+  document.getElementById('present-count').textContent = presentCount;
+  document.getElementById('absent-count').textContent = students.length - presentCount;
+  document.getElementById('percent').textContent = percent + '%';
+
+  const list = document.getElementById('student-list');
+  list.innerHTML = '';
+
+  let filtered = students.sort((a, b) => a.short.localeCompare(b.short));
+  filtered.forEach(st => {
+    const isPresent = !!session.attendance[st.reg];
+    const card = document.createElement('div');
+    card.className = 'card student-card';
+    card.style.background = isPresent ? '#ecfdf5' : '#fef2f2';
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <strong>${st.short}</strong><br>
+          <small style="color:#64748b;">${st.reg}</small>
+        </div>
+        <button class="btn ${isPresent ? 'btn-primary' : 'btn-outline'}" onclick="toggleAttendance('${st.reg}')">
+          ${isPresent ? 'Present' : 'Absent'}
+        </button>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function filterStudents() {
+  const search = document.getElementById('student-search').value.toLowerCase();
+  const list = document.getElementById('student-list');
+  const cards = list.querySelectorAll('.student-card');
+  cards.forEach(card => {
+    const text = card.textContent.toLowerCase();
+    card.style.display = text.includes(search) ? 'block' : 'none';
+  });
+}
+
+function toggleAttendance(regNo) {
+  const session = sessions.find(s => s.id === currentSessionId);
+  if (session) {
+    if (session.attendance[regNo]) {
+      delete session.attendance[regNo];
+    } else {
+      session.attendance[regNo] = true;
+    }
+    saveSessions();
+    renderMarkingView();
+  }
+}
+
+function markByRegNo() {
+  const regNo = document.getElementById('manual-regno').value.trim();
+  if (regNo) {
+    markStudent(regNo);
+    document.getElementById('manual-regno').value = '';
+  }
+}
+
+function markAllPresent() {
+  const session = sessions.find(s => s.id === currentSessionId);
+  if (session) {
+    const students = studentsByClass[session.classBatch] || [];
+    students.forEach(st => session.attendance[st.reg] = true);
+    saveSessions();
+    renderMarkingView();
+  }
+}
+
+function markAllAbsent() {
+  const session = sessions.find(s => s.id === currentSessionId);
+  if (session) {
+    session.attendance = {};
+    saveSessions();
+    renderMarkingView();
+  }
+}
+
+function importAttendance() {
+  const fileInput = document.getElementById('import-file');
+  const file = fileInput.files[0];
+  if (!file) {
+    showAlert("Please select a CSV file", "error");
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const text = e.target.result;
+    const lines = text.split('\n');
+    const session = sessions.find(s => s.id === currentSessionId);
+    if (session) {
+      session.attendance = {};
+      for (let i = 1; i < lines.length; i++) {
+        const parts = lines[i].split(',');
+        if (parts.length >= 3 && parts[2].trim().toLowerCase() === 'present') {
+          const reg = parts[0].replace(/"/g, '').trim();
+          session.attendance[reg] = true;
+        }
+      }
+      saveSessions();
+      renderMarkingView();
+      showAlert("Attendance imported!");
+    }
+  };
+  reader.readAsText(file);
+}
+
+function exportSessionCSV(id = currentSessionId) {
+  const session = sessions.find(s => s.id === id);
+  if (!session) return;
+  const students = studentsByClass[session.classBatch] || [];
+  let csv = "Reg No,Name,Status\n";
+  students.forEach(st => {
+    const status = session.attendance[st.reg] ? "Present" : "Absent";
+    csv += `"${st.reg}","${st.short}","${status}"\n`;
+  });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Attendance_${session.classBatch}_${session.subject}_${session.date}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function deleteSession(id) {
+  if (confirm("Delete this session?")) {
+    sessions = sessions.filter(s => s.id !== id);
+    saveSessions();
+    renderSessions();
+  }
+}
+
+function renderReports() {
+  const classBatch = document.getElementById('report-class').value;
+  if (!classBatch) {
+    document.getElementById('report-summary').classList.add('hidden');
+    document.getElementById('report-table').classList.add('hidden');
+    document.getElementById('export-report-btn').classList.add('hidden');
+    document.getElementById('no-data').style.display = 'block';
+    if (trendChart) trendChart.destroy();
+    if (sessionBarChart) sessionBarChart.destroy();
+    if (studentBarChart) studentBarChart.destroy();
+    return;
+  }
+  document.getElementById('no-data').style.display = 'none';
+
+  const classSessions = sessions.filter(s => s.classBatch === classBatch).sort((a, b) => new Date(a.date) - new Date(b.date));
+  const totalSessions = classSessions.length;
+  const students = studentsByClass[classBatch] || [];
+
+  let totalPresent = 0;
+  const reportData = students.map(st => {
+    let present = 0;
+    classSessions.forEach(sess => {
+      if (sess.attendance[st.reg]) present++;
+    });
+    const percent = totalSessions > 0 ? Math.round((present / totalSessions) * 100) : 0;
+    totalPresent += present;
+    return { reg: st.reg, short: st.short, present, absent: totalSessions - present, percent };
+  });
+
+  const tableData = [...reportData].sort((a, b) => a.percent - b.percent);
+  const studentChartData = [...reportData].sort((a, b) => b.percent - a.percent);
+
+  const avgPercent = totalSessions > 0 ? Math.round((totalPresent / (students.length * totalSessions)) * 100) : 0;
+  const lowCount = reportData.filter(r => r.percent < 90).length;
+
+  document.getElementById('report-summary').innerHTML = `
+    <div class="summary-card">
+      <div>Total Students</div>
+      <strong>${students.length}</strong>
+    </div>
+    <div class="summary-card">
+      <div>Total Sessions</div>
+      <strong>${totalSessions}</strong>
+    </div>
+    <div class="summary-card">
+      <div>Average Attendance</div>
+      <strong>${avgPercent}%</strong>
+    </div>
+    <div class="summary-card">
+      <div>Below 90%</div>
+      <strong>${lowCount}</strong>
+    </div>
+  `;
+  document.getElementById('report-summary').classList.remove('hidden');
+  document.getElementById('export-report-btn').classList.remove('hidden');
+
+  // Trend Chart
+  const dates = classSessions.map(s => s.date || 'No date');
+  const classPercentages = classSessions.map(s => {
+    const present = Object.keys(s.attendance).length;
+    return students.length > 0 ? Math.round((present / students.length) * 100) : 0;
+  });
+
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels: dates.length ? dates : ['No sessions'],
+      datasets: [{
+        label: 'Class Attendance %',
+        data: classPercentages.length ? classPercentages : [0],
+        borderColor: '#10b981',
+        backgroundColor: 'rgba(16,185,129,0.1)',
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true, max: 100 } }
+    }
+  });
+
+  // Session Bar Chart
+  const presentPerSession = classSessions.map(s => Object.keys(s.attendance).length);
+  const absentPerSession = classSessions.map(s => students.length - Object.keys(s.attendance).length);
+
+  if (sessionBarChart) sessionBarChart.destroy();
+  sessionBarChart = new Chart(document.getElementById('sessionBarChart'), {
+    type: 'bar',
+    data: {
+      labels: dates.length ? dates : ['No sessions'],
+      datasets: [
+        { label: 'Present', data: presentPerSession.length ? presentPerSession : [0], backgroundColor: '#10b981' },
+        { label: 'Absent', data: absentPerSession.length ? absentPerSession : [0], backgroundColor: '#ef4444' }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
+    }
+  });
+
+  // Per-Student Bar Chart
+  const studentNames = studentChartData.map(r => r.short.length > 20 ? r.short.substring(0,20)+'...' : r.short);
+  const studentPercents = studentChartData.map(r => r.percent);
+  const studentColors = studentPercents.map(p => p < 90 ? '#ef4444' : '#10b981');
+
+  if (studentBarChart) studentBarChart.destroy();
+  studentBarChart = new Chart(document.getElementById('studentBarChart'), {
+    type: 'bar',
+    data: {
+      labels: studentNames.length ? studentNames : ['No students'],
+      datasets: [{
+        label: 'Attendance %',
+        data: studentPercents.length ? studentPercents : [0],
+        backgroundColor: studentColors.length ? studentColors : ['#64748b']
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { x: { beginAtZero: true, max: 100 } },
+      plugins: { legend: { display: false } }
+    }
+  });
+
+  // Table
+  const tbody = document.getElementById('report-table').querySelector('tbody');
+  tbody.innerHTML = '';
+  tableData.forEach(row => {
+    const tr = document.createElement('tr');
+    if (row.percent < 90) tr.classList.add('low-attendance');
+    tr.innerHTML = `
+      <td style="font-family:monospace;">${row.reg}</td>
+      <td>${row.short}</td>
+      <td>${totalSessions}</td>
+      <td>${row.present}</td>
+      <td>${row.absent}</td>
+      <td>${row.percent}%</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('report-table').classList.remove('hidden');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('date').value = today;
+  lucide.createIcons();
+  showView('home');
+});
+</script>
+</body>
+</html>

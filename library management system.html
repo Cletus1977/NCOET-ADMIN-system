@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NCOET Library Management System - Kuliyapitiya</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --primary: #003087;
+        }
+        body {
+            background: #f8f9fa;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #003087, #0050c0);
+        }
+        .nav-link {
+            color: white !important;
+            font-weight: 500;
+        }
+        .nav-link.active {
+            background: rgba(255,255,255,0.2);
+            border-radius: 8px;
+        }
+        .card {
+            border: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .modal-content {
+            border-radius: 15px;
+        }
+        .qr-container {
+            width: 220px;
+            height: 220px;
+            margin: 0 auto;
+            padding: 15px;
+            background: white;
+            border: 3px solid #003087;
+            border-radius: 12px;
+        }
+        .table th {
+            background: #003087;
+            color: white;
+        }
+        .section {
+            display: none;
+        }
+        .section.active {
+            display: block;
+        }
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: white;
+        }
+        .status-available {
+            color: #198754;
+            font-weight: bold;
+        }
+        .status-issued {
+            color: #dc3545;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <i class="fas fa-book me-2"></i>
+                <span class="logo">NCOET</span>
+            </a>
+            <span class="navbar-text text-white fs-5">Library Management System - Kuliyapitiya</span>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbars">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbars">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link active" href="#" onclick="showSection('dashboard')"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('members')"><i class="fas fa-users"></i> Members</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('books')"><i class="fas fa-book"></i> Physical Books</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('elibrary')"><i class="fas fa-laptop"></i> E-Library</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('attendance')"><i class="fas fa-clock"></i> Attendance</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('issues')"><i class="fas fa-exchange-alt"></i> Lending</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('reports')"><i class="fas fa-chart-bar"></i> Reports</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <!-- Main Content -->
+            <div class="col-12">
+
+                <!-- DASHBOARD -->
+                <div id="dashboard" class="section active">
+                    <h2 class="mb-4"><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
+                    <div class="row g-4">
+                        <div class="col-md-3">
+                            <div class="card text-white bg-primary h-100">
+                                <div class="card-body">
+                                    <h5>Total Members</h5>
+                                    <h3 id="totalMembers">0</h3>
+                                    <small>Students: <span id="studentCount">0</span> | Staff: <span id="staffCount">0</span></small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-white bg-success h-100">
+                                <div class="card-body">
+                                    <h5>Total Physical Books</h5>
+                                    <h3 id="totalBooks">0</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-white bg-warning h-100">
+                                <div class="card-body">
+                                    <h5>Currently Issued</h5>
+                                    <h3 id="issuedBooks">0</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-white bg-danger h-100">
+                                <div class="card-body">
+                                    <h5>Overdue Books</h5>
+                                    <h3 id="overdueCount">0</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header"><strong>Today's Library Attendance</strong></div>
+                                <div class="card-body" id="todayAttendance">0 members entered today</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header"><strong>Quick Actions</strong></div>
+                                <div class="card-body">
+                                    <button class="btn btn-primary me-2" onclick="showSection('members')"><i class="fas fa-user-plus"></i> Add Member</button>
+                                    <button class="btn btn-success me-2" onclick="showSection('books')"><i class="fas fa-plus"></i> Add Book</button>
+                                    <button class="btn btn-info" onclick="showSection('issues')"><i class="fas fa-handshake"></i> Issue Book</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MEMBERS -->
+                <div id="members" class="section">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2><i class="fas fa-users"></i> Members (Max: 840 Students + 190 Staff)</h2>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMemberModal">
+                            <i class="fas fa-user-plus"></i> Add New Member
+                        </button>
+                    </div>
+                    
+                    <div class="input-group mb-3">
+                        <input type="text" id="memberSearch" class="form-control" placeholder="Search by name or ID..." onkeyup="filterMembers()">
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="membersTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>QR Code</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- PHYSICAL BOOKS -->
+                <div id="books" class="section">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2><i class="fas fa-book"></i> Physical Library Books</h2>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBookModal">
+                            <i class="fas fa-plus"></i> Add New Book
+                        </button>
+                    </div>
+                    
+                    <div class="input-group mb-3">
+                        <input type="text" id="bookSearch" class="form-control" placeholder="Search by title, author or accession..." onkeyup="filterBooks()">
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="booksTable">
+                            <thead>
+                                <tr>
+                                    <th>Accession</th>
+                                    <th>Title</th>
+                                    <th>Author</th>
+                                    <th>ISBN</th>
+                                    <th>Status</th>
+                                    <th>QR Code</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- E-LIBRARY -->
+                <div id="elibrary" class="section">
+                    <h2><i class="fas fa-laptop"></i> E-Library Resources</h2>
+                    <p class="text-muted">Digital books &amp; resources (demo - links are placeholders)</p>
+                    
+                    <div class="d-flex justify-content-between mb-3">
+                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addEbookModal">
+                            <i class="fas fa-upload"></i> Add E-Resource
+                        </button>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="ebooksTable">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Author</th>
+                                    <th>Type</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ATTENDANCE -->
+                <div id="attendance" class="section">
+                    <h2><i class="fas fa-clock"></i> Library Attendance</h2>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">Log Member Entry</div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">Select Member</label>
+                                        <select id="attendanceMember" class="form-select"></select>
+                                    </div>
+                                    <button class="btn btn-success w-100" onclick="logAttendance()">
+                                        <i class="fas fa-sign-in-alt"></i> Mark Entry (Auto Time)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">Attendance Summary</div>
+                                <div class="card-body">
+                                    <div id="attendanceStats"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h5 class="mt-4">Recent Entries</h5>
+                    <div class="table-responsive">
+                        <table class="table" id="attendanceTable">
+                            <thead><tr><th>Time</th><th>Member</th><th>Category</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- LENDING / ISSUES -->
+                <div id="issues" class="section">
+                    <h2><i class="fas fa-exchange-alt"></i> Book Lending &amp; Returns</h2>
+                    <ul class="nav nav-pills mb-3">
+                        <li class="nav-item"><a class="nav-link active" id="issueTab" onclick="switchIssueTab(0)">Issue Book</a></li>
+                        <li class="nav-item"><a class="nav-link" id="returnTab" onclick="switchIssueTab(1)">Return Book</a></li>
+                        <li class="nav-item"><a class="nav-link" id="overdueTab" onclick="switchIssueTab(2)">Overdue / Reminders</a></li>
+                    </ul>
+                    
+                    <!-- Issue Form -->
+                    <div id="issueFormPanel">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">Issue New Book</div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label>Select Member</label>
+                                            <select id="issueMember" class="form-select"></select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label>Select Available Book</label>
+                                            <select id="issueBook" class="form-select"></select>
+                                        </div>
+                                        <button class="btn btn-primary w-100" onclick="issueBook()">Issue Book (14 days)</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- All Transactions -->
+                    <div class="mt-4">
+                        <h5>All Transactions</h5>
+                        <div class="table-responsive">
+                            <table class="table" id="transactionsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Book</th>
+                                        <th>Member</th>
+                                        <th>Issued</th>
+                                        <th>Due</th>
+                                        <th>Returned</th>
+                                        <th>Fine (LKR)</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- REPORTS -->
+                <div id="reports" class="section">
+                    <h2><i class="fas fa-chart-bar"></i> Reports</h2>
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">Member Statistics</div>
+                                <div class="card-body" id="memberStatsReport"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">Most Borrowed Books</div>
+                                <div class="card-body" id="popularBooks"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+
+    <!-- Add Member Modal -->
+    <div class="modal fade" id="addMemberModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Member</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="memberForm">
+                        <div class="mb-3">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" id="mName" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Category</label>
+                            <select id="mCategory" class="form-select">
+                                <option value="NCOET Student">NCOET Student</option>
+                                <option value="Academic Staff">Academic Staff</option>
+                                <option value="Management Staff">Management Staff</option>
+                                <option value="Assisting Staff">Assisting Staff</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" id="mEmail" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Phone</label>
+                            <input type="tel" id="mPhone" class="form-control">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="addMember()">Save Member</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Book Modal -->
+    <div class="modal fade" id="addBookModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Physical Book</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="bookForm">
+                        <div class="mb-3">
+                            <label>Title</label>
+                            <input type="text" id="bTitle" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Author</label>
+                            <input type="text" id="bAuthor" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>ISBN</label>
+                            <input type="text" id="bISBN" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label>Publisher / Year</label>
+                            <input type="text" id="bPub" class="form-control">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="addBook()">Save Book</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add E-Book Modal -->
+    <div class="modal fade" id="addEbookModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add E-Resource</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="ebookForm">
+                        <div class="mb-3">
+                            <label>Title</label>
+                            <input type="text" id="ebTitle" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Author</label>
+                            <input type="text" id="ebAuthor" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Type (PDF, Video, etc.)</label>
+                            <input type="text" id="ebType" class="form-control" value="PDF">
+                        </div>
+                        <div class="mb-3">
+                            <label>Download Link (demo)</label>
+                            <input type="url" id="ebUrl" class="form-control" value="https://example.com/resource.pdf">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="addEbook()">Add Resource</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Modal -->
+    <div class="modal fade" id="qrModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="qrTitle">QR Code</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div id="qrContainer" class="qr-container"></div>
+                    <p class="mt-3 mb-1 fw-bold" id="qrText"></p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-primary" onclick="downloadQR()">Download PNG</button>
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ====================== DATA STORAGE ======================
+        let members = JSON.parse(localStorage.getItem('ncoet_members')) || [];
+        let books = JSON.parse(localStorage.getItem('ncoet_books')) || [];
+        let attendanceLogs = JSON.parse(localStorage.getItem('ncoet_attendance')) || [];
+        let transactions = JSON.parse(localStorage.getItem('ncoet_transactions')) || [];
+        let ebooks = JSON.parse(localStorage.getItem('ncoet_ebooks')) || [
+            {id:1, title:"Introduction to Engineering Technology", author:"Prof. Silva", type:"PDF", url:"#"},
+            {id:2, title:"Biosystems Technology Handbook", author:"Dr. Perera", type:"PDF", url:"#"}
+        ];
+
+        const DAILY_FINE = 10; // LKR per day overdue
+        const LOAN_DAYS = 14;
+
+        // ====================== HELPER FUNCTIONS ======================
+        function saveAllData() {
+            localStorage.setItem('ncoet_members', JSON.stringify(members));
+            localStorage.setItem('ncoet_books', JSON.stringify(books));
+            localStorage.setItem('ncoet_attendance', JSON.stringify(attendanceLogs));
+            localStorage.setItem('ncoet_transactions', JSON.stringify(transactions));
+            localStorage.setItem('ncoet_ebooks', JSON.stringify(ebooks));
+        }
+
+        function generateID(prefix) {
+            return prefix + '-' + String(Date.now()).slice(-6);
+        }
+
+        function formatDate(date) {
+            return date.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
+        }
+
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            
+            // Refresh data
+            if (sectionId === 'dashboard') refreshDashboard();
+            if (sectionId === 'members') renderMembers();
+            if (sectionId === 'books') renderBooks();
+            if (sectionId === 'elibrary') renderEbooks();
+            if (sectionId === 'attendance') renderAttendance();
+            if (sectionId === 'issues') renderTransactions();
+            if (sectionId === 'reports') renderReports();
+        }
+
+        function showQR(title, text) {
+            document.getElementById('qrTitle').textContent = title;
+            document.getElementById('qrText').textContent = text;
+            
+            const container = document.getElementById('qrContainer');
+            container.innerHTML = '';
+            
+            new QRCode(container, {
+                text: text,
+                width: 200,
+                height: 200,
+                colorDark: "#003087",
+                colorLight: "#ffffff"
+            });
+            
+            const modal = new bootstrap.Modal(document.getElementById('qrModal'));
+            modal.show();
+        }
+
+        window.downloadQR = function() {
+            const canvas = document.querySelector('#qrContainer canvas');
+            if (!canvas) return;
+            const link = document.createElement('a');
+            link.download = 'ncoet-qr.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        };
+
+        // ====================== DASHBOARD ======================
+        function refreshDashboard() {
+            document.getElementById('totalMembers').textContent = members.length;
+            const students = members.filter(m => m.category === 'NCOET Student').length;
+            document.getElementById('studentCount').textContent = students;
+            document.getElementById('staffCount').textContent = members.length - students;
+            
+            document.getElementById('totalBooks').textContent = books.length;
+            
+            const issued = transactions.filter(t => !t.returnDate).length;
+            document.getElementById('issuedBooks').textContent = issued;
+            
+            const overdue = transactions.filter(t => {
+                if (t.returnDate) return false;
+                return new Date(t.dueDate) < new Date();
+            }).length;
+            document.getElementById('overdueCount').textContent = overdue;
+            
+            // Today's attendance
+            const today = new Date().toISOString().slice(0,10);
+            const todayCount = attendanceLogs.filter(log => log.date.startsWith(today)).length;
+            document.getElementById('todayAttendance').innerHTML = `<strong>${todayCount}</strong> members entered today`;
+        }
+
+        // ====================== MEMBERS ======================
+        function addMember() {
+            const name = document.getElementById('mName').value.trim();
+            const category = document.getElementById('mCategory').value;
+            const email = document.getElementById('mEmail').value.trim();
+            const phone = document.getElementById('mPhone').value.trim();
+            
+            if (!name || !email) {
+                alert("Name and Email are required!");
+                return;
+            }
+            
+            const newMember = {
+                id: generateID('MEM'),
+                name: name,
+                category: category,
+                email: email,
+                phone: phone || 'N/A',
+                joined: new Date().toISOString().slice(0,10)
+            };
+            
+            members.push(newMember);
+            saveAllData();
+            renderMembers();
+            bootstrap.Modal.getInstance(document.getElementById('addMemberModal')).hide();
+            document.getElementById('memberForm').reset();
+            alert("Member added successfully! QR code ready.");
+        }
+
+        function renderMembers(filteredMembers = null) {
+            const tbody = document.querySelector('#membersTable tbody');
+            tbody.innerHTML = '';
+            const list = filteredMembers || members;
+            
+            list.forEach(member => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${member.id}</td>
+                    <td>${member.name}</td>
+                    <td><span class="badge bg-info">${member.category}</span></td>
+                    <td>${member.email}</td>
+                    <td>${member.phone}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="showMemberQR('${member.id}', '${member.name}')">
+                            <i class="fas fa-qrcode"></i>
+                        </button>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="deleteMember('${member.id}')">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        window.showMemberQR = function(id, name) {
+            showQR(`Member QR - ${name}`, `NCOET-MEMBER-${id}`);
+        };
+
+        window.deleteMember = function(id) {
+            if (confirm("Delete this member?")) {
+                members = members.filter(m => m.id !== id);
+                saveAllData();
+                renderMembers();
+            }
+        };
+
+        window.filterMembers = function() {
+            const term = document.getElementById('memberSearch').value.toLowerCase();
+            const filtered = members.filter(m => 
+                m.name.toLowerCase().includes(term) || 
+                m.id.toLowerCase().includes(term)
+            );
+            renderMembers(filtered);
+        };
+
+        // ====================== BOOKS ======================
+        function addBook() {
+            const title = document.getElementById('bTitle').value.trim();
+            const author = document.getElementById('bAuthor').value.trim();
+            const isbn = document.getElementById('bISBN').value.trim();
+            const pub = document.getElementById('bPub').value.trim();
+            
+            if (!title || !author) return alert("Title and Author required");
+            
+            const newBook = {
+                id: generateID('BOOK'),
+                title: title,
+                author: author,
+                isbn: isbn || 'N/A',
+                publisher: pub || 'N/A',
+                status: 'Available',
+                added: new Date().toISOString().slice(0,10)
+            };
+            
+            books.push(newBook);
+            saveAllData();
+            renderBooks();
+            bootstrap.Modal.getInstance(document.getElementById('addBookModal')).hide();
+            document.getElementById('bookForm').reset();
+        }
+
+        function renderBooks(filtered = null) {
+            const tbody = document.querySelector('#booksTable tbody');
+            tbody.innerHTML = '';
+            const list = filtered || books;
+            
+            list.forEach(book => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${book.id}</td>
+                    <td>${book.title}</td>
+                    <td>${book.author}</td>
+                    <td>${book.isbn}</td>
+                    <td><span class="${book.status === 'Available' ? 'status-available' : 'status-issued'}">${book.status}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="showBookQR('${book.id}', '${book.title}')">
+                            <i class="fas fa-qrcode"></i>
+                        </button>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="deleteBook('${book.id}')">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        window.showBookQR = function(id, title) {
+            showQR(`Book QR - ${title}`, `NCOET-BOOK-${id}`);
+        };
+
+        window.deleteBook = function(id) {
+            if (confirm("Delete book?")) {
+                books = books.filter(b => b.id !== id);
+                saveAllData();
+                renderBooks();
+            }
+        };
+
+        window.filterBooks = function() {
+            const term = document.getElementById('bookSearch').value.toLowerCase();
+            const filtered = books.filter(b => 
+                b.title.toLowerCase().includes(term) || 
+                b.author.toLowerCase().includes(term) ||
+                b.id.toLowerCase().includes(term)
+            );
+            renderBooks(filtered);
+        };
+
+        // ====================== E-LIBRARY ======================
+        function addEbook() {
+            const title = document.getElementById('ebTitle').value.trim();
+            const author = document.getElementById('ebAuthor').value.trim();
+            const type = document.getElementById('ebType').value.trim();
+            let url = document.getElementById('ebUrl').value.trim();
+            
+            if (!title || !author) return;
+            if (!url) url = '#';
+            
+            ebooks.push({
+                id: Date.now(),
+                title: title,
+                author: author,
+                type: type,
+                url: url
+            });
+            
+            saveAllData();
+            renderEbooks();
+            bootstrap.Modal.getInstance(document.getElementById('addEbookModal')).hide();
+            document.getElementById('ebookForm').reset();
+        }
+
+        function renderEbooks() {
+            const tbody = document.querySelector('#ebooksTable tbody');
+            tbody.innerHTML = '';
+            
+            ebooks.forEach(eb => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${eb.title}</td>
+                    <td>${eb.author}</td>
+                    <td><span class="badge bg-secondary">${eb.type}</span></td>
+                    <td>
+                        <a href="${eb.url}" target="_blank" class="btn btn-sm btn-primary">
+                            <i class="fas fa-download"></i> Access
+                        </a>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // ====================== ATTENDANCE ======================
+        function populateAttendanceSelect() {
+            const select = document.getElementById('attendanceMember');
+            select.innerHTML = '<option value="">-- Select Member --</option>';
+            members.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = `${m.name} (${m.id})`;
+                select.appendChild(opt);
+            });
+        }
+
+        window.logAttendance = function() {
+            const memberId = document.getElementById('attendanceMember').value;
+            if (!memberId) return alert("Select a member");
+            
+            const member = members.find(m => m.id === memberId);
+            
+            attendanceLogs.unshift({
+                id: Date.now(),
+                memberId: memberId,
+                name: member.name,
+                category: member.category,
+                date: new Date().toISOString()
+            });
+            
+            saveAllData();
+            renderAttendance();
+            alert(`Entry logged for ${member.name} at ${new Date().toLocaleTimeString()}`);
+        };
+
+        function renderAttendance() {
+            populateAttendanceSelect();
+            
+            // Stats
+            const totalVisits = attendanceLogs.length;
+            const uniqueMembers = new Set(attendanceLogs.map(l => l.memberId)).size;
+            
+            document.getElementById('attendanceStats').innerHTML = `
+                <p><strong>Total Visits:</strong> ${totalVisits}</p>
+                <p><strong>Unique Members Visited:</strong> ${uniqueMembers}</p>
+                <small class="text-muted">Last 30 days data retained</small>
+            `;
+            
+            const tbody = document.querySelector('#attendanceTable tbody');
+            tbody.innerHTML = '';
+            
+            const recent = attendanceLogs.slice(0, 20);
+            recent.forEach(log => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${new Date(log.date).toLocaleString('en-GB')}</td>
+                    <td>${log.name}</td>
+                    <td>${log.category}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // ====================== LENDING ======================
+        function populateIssueSelects() {
+            // Members
+            const memSelect = document.getElementById('issueMember');
+            memSelect.innerHTML = '<option value="">-- Choose Member --</option>';
+            members.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = `${m.name} (${m.category})`;
+                memSelect.appendChild(opt);
+            });
+            
+            // Books (only available)
+            const bookSelect = document.getElementById('issueBook');
+            bookSelect.innerHTML = '<option value="">-- Choose Book --</option>';
+            books.filter(b => b.status === 'Available').forEach(b => {
+                const opt = document.createElement('option');
+                opt.value = b.id;
+                opt.textContent = `${b.title} - ${b.id}`;
+                bookSelect.appendChild(opt);
+            });
+        }
+
+        window.issueBook = function() {
+            const memberId = document.getElementById('issueMember').value;
+            const bookId = document.getElementById('issueBook').value;
+            
+            if (!memberId || !bookId) return alert("Please select both member and book");
+            
+            const book = books.find(b => b.id === bookId);
+            if (book.status !== 'Available') return alert("Book not available");
+            
+            const issueDate = new Date();
+            const dueDate = new Date(issueDate);
+            dueDate.setDate(dueDate.getDate() + LOAN_DAYS);
+            
+            transactions.unshift({
+                id: Date.now(),
+                bookId: bookId,
+                bookTitle: book.title,
+                memberId: memberId,
+                memberName: members.find(m => m.id === memberId).name,
+                issueDate: issueDate.toISOString(),
+                dueDate: dueDate.toISOString(),
+                returnDate: null,
+                fine: 0
+            });
+            
+            book.status = 'Issued';
+            saveAllData();
+            renderTransactions();
+            renderBooks();
+            alert("Book issued successfully!");
+        };
+
+        function renderTransactions() {
+            populateIssueSelects();
+            
+            const tbody = document.querySelector('#transactionsTable tbody');
+            tbody.innerHTML = '';
+            
+            transactions.forEach((trans, index) => {
+                let status = 'Active';
+                let fine = 0;
+                
+                if (trans.returnDate) {
+                    status = 'Returned';
+                } else {
+                    const due = new Date(trans.dueDate);
+                    const today = new Date();
+                    if (due < today) {
+                        const daysOver = Math.floor((today - due) / (1000*60*60*24));
+                        fine = daysOver * DAILY_FINE;
+                        status = `<span class="text-danger">Overdue ${daysOver} days</span>`;
+                    }
+                }
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${trans.bookTitle}</td>
+                    <td>${trans.memberName}</td>
+                    <td>${formatDate(new Date(trans.issueDate))}</td>
+                    <td>${formatDate(new Date(trans.dueDate))}</td>
+                    <td>${trans.returnDate ? formatDate(new Date(trans.returnDate)) : '-'}</td>
+                    <td><strong>${fine || trans.fine}</strong> LKR</td>
+                    <td>${status}</td>
+                    <td>
+                        ${!trans.returnDate ? 
+                            `<button class="btn btn-sm btn-success" onclick="returnBook(${index})">Return</button>` : 
+                            `<button class="btn btn-sm btn-outline-info" onclick="sendReminder(${index})">Reminder</button>`
+                        }
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        window.returnBook = function(index) {
+            const trans = transactions[index];
+            if (!trans || trans.returnDate) return;
+            
+            trans.returnDate = new Date().toISOString();
+            
+            // Calculate fine
+            const due = new Date(trans.dueDate);
+            const returned = new Date(trans.returnDate);
+            let daysOver = Math.floor((returned - due) / (1000*60*60*24));
+            if (daysOver > 0) {
+                trans.fine = daysOver * DAILY_FINE;
+            } else {
+                trans.fine = 0;
+            }
+            
+            // Set book back to available
+            const book = books.find(b => b.id === trans.bookId);
+            if (book) book.status = 'Available';
+            
+            saveAllData();
+            renderTransactions();
+            renderBooks();
+            alert(`Book returned! Fine: ${trans.fine} LKR`);
+        };
+
+        window.sendReminder = function(index) {
+            const trans = transactions[index];
+            const member = members.find(m => m.id === trans.memberId);
+            if (member) {
+                alert(`📧 Reminder email sent to ${member.email}\n\nSubject: Overdue Book - ${trans.bookTitle}\n\nPlease return immediately.`);
+            }
+        };
+
+        window.switchIssueTab = function(tab) {
+            document.querySelectorAll('#issues .nav-link').forEach(l => l.classList.remove('active'));
+            if (tab === 0) {
+                document.getElementById('issueTab').classList.add('active');
+                document.getElementById('issueFormPanel').style.display = 'block';
+            } else {
+                document.getElementById('issueFormPanel').style.display = 'none';
+                if (tab === 2) alert("Overdue list shown in main transactions table (red highlighted). Use Reminder button.");
+            }
+        };
+
+        // ====================== REPORTS ======================
+        function renderReports() {
+            // Member stats
+            const catCount = {};
+            members.forEach(m => {
+                catCount[m.category] = (catCount[m.category] || 0) + 1;
+            });
+            
+            let html = '<ul class="list-group">';
+            Object.keys(catCount).forEach(cat => {
+                html += `<li class="list-group-item">${cat}: <strong>${catCount[cat]}</strong></li>`;
+            });
+            html += '</ul>';
+            document.getElementById('memberStatsReport').innerHTML = html;
+            
+            // Popular books (demo)
+            document.getElementById('popularBooks').innerHTML = `
+                <p class="text-muted">Demo data (real usage tracked in full version):</p>
+                <ol>
+                    <li>Introduction to Programming - 12 issues</li>
+                    <li>Biosystems Engineering - 8 issues</li>
+                    <li>Digital Electronics - 5 issues</li>
+                </ol>
+            `;
+        }
+
+        // ====================== INITIALIZATION ======================
+        function initDemoData() {
+            if (members.length === 0) {
+                members = [
+                    {id:"MEM-123456", name:"Kumara Perera", category:"NCOET Student", email:"kumara@ncoet.lk", phone:"0771234567", joined:"2025-12-01"},
+                    {id:"MEM-123457", name:"Dr. Anjali Silva", category:"Academic Staff", email:"anjali@ncoet.lk", phone:"0719876543", joined:"2025-11-15"},
+                    {id:"MEM-123458", name:"Ruwan Management", category:"Management Staff", email:"ruwan@ncoet.lk", phone:"0751112223", joined:"2025-12-10"}
+                ];
+            }
+            
+            if (books.length === 0) {
+                books = [
+                    {id:"BOOK-111111", title:"Introduction to Programming", author:"Robert C. Martin", isbn:"978-0132350884", publisher:"Prentice Hall", status:"Available", added:"2025-12-01"},
+                    {id:"BOOK-111112", title:"Biosystems Technology", author:"Dr. Nimal Perera", isbn:"978-1234567890", publisher:"NCOET Press", status:"Available", added:"2025-12-05"}
+                ];
+            }
+            
+            saveAllData();
+        }
+
+        // Load everything
+        window.onload = function() {
+            initDemoData();
+            
+            // Render all sections once
+            renderMembers();
+            renderBooks();
+            renderEbooks();
+            renderAttendance();
+            renderTransactions();
+            renderReports();
+            refreshDashboard();
+            
+            // Show dashboard by default
+            showSection('dashboard');
+            
+            // Populate issue selects initially
+            setTimeout(() => {
+                populateIssueSelects();
+            }, 500);
+            
+            console.log('%cNCOET Library System loaded successfully! 🎉', 'color:#003087; font-size:16px');
+        };
+    </script>
+</body>
+</html>

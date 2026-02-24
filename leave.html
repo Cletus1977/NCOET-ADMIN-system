@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NCOET Leave Management Application</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f9f9f9; }
+        h1, h2 { text-align: center; color: #333; }
+        .container { max-width: 1600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .balances { background: #e6f7ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-size: 1.2em; }
+        .balances div { margin: 10px 0; }
+        form { border: 1px solid #ccc; padding: 20px; border-radius: 8px; background: #f5f5f5; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; }
+        button { margin-top: 20px; padding: 10px 20px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0055aa; }
+        button.small { padding: 5px 10px; font-size: 0.9em; margin: 0 5px; }
+        button.reject { background: #cc0000; }
+        button.reject:hover { background: #aa0000; }
+        button.delete { background: #990000; }
+        button.delete:hover { background: #770000; }
+        table { width: 100%; margin-top: 30px; border-collapse: collapse; font-size: 0.95em; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; vertical-align: top; }
+        th { background: #0066cc; color: white; }
+        tr:nth-child(even) { background: #f9f9f9; }
+        .alert { color: red; font-weight: bold; text-align: center; margin: 10px 0; }
+        .success { color: green; font-weight: bold; text-align: center; margin: 10px 0; }
+        .export-btn { text-align: center; margin: 20px 0; }
+        .reason { max-width: 200px; word-wrap: break-word; }
+        .link { word-break: break-all; font-size: 0.9em; }
+        .note { background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; font-size: 0.9em; }
+        .help-text { font-size: 0.9em; color: #666; margin-top: 5px; }
+        #login-container { max-width: 600px; margin: 50px auto; padding: 30px; background: white; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.2); text-align: center; }
+        #logged-in-info { background: #d4edda; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <!-- Login Screen -->
+    <div id="login-container">
+        <h2>NCOET Leave Management System</h2>
+        <p>Please login to continue</p>
+        <select id="login-role" onchange="toggleLoginFields()">
+            <option value="applicant">Applicant (Staff Member)</option>
+            <option value="vpadmin">VP Admin</option>
+            <option value="president">President</option>
+        </select>
+        <div id="applicant-reg-div" style="margin-top:20px;">
+            <label>Enter Your Registration Number</label>
+            <input type="text" id="login-reg" placeholder="e.g., NCOET/STAFF/001">
+        </div>
+        <div id="password-div" style="margin-top:20px; display:none;">
+            <label>Password</label>
+            <input type="password" id="login-password">
+        </div>
+        <button style="margin-top:25px;" onclick="performLogin()">Login</button>
+        <p style="margin-top:20px; color:#666;">Staff applicants login with their unique Registration Number (no password).<br>Change admin passwords in the script section for security.</p>
+    </div>
+
+    <!-- Main Application -->
+    <div id="main-container" style="display:none;">
+        <div class="container">
+            <h1>NCOET Leave Management Application</h1>
+            <p style="text-align:center;">Inspired by General Form 125A: 125A (Sri Lanka Public Administration - Establishment Code)<br>
+            Annual Entitlements: <strong>Casual Leave 21 days | Sick Leave 24 days | Duty Leave: Unlimited | Total Limited: 45 days</strong></p>
+
+            <div id="logged-in-info">
+                Logged in as: <strong id="user-display"></strong>
+                <button onclick="logout()">Logout</button>
+            </div>
+
+            <div class="note">
+                <strong>Important Notes:</strong><br>
+                • Each staff member has individual leave balances identified by their unique <strong>Registration Number</strong>.<br>
+                • After your first successful leave submission, your Name, Email, Designation, and Station will be saved and pre-filled in future applications.<br>
+                • Duty Leave is unlimited and does not affect limited balances.<br>
+                • Applicants see only their own applications and balances.<br>
+                • Admins can view all and apply on behalf of any staff.<br>
+                • Current admin passwords: VP Admin = <code>vpadmin123</code> | President = <code>president123</code>
+            </div>
+
+            <div class="balances55" id="balances-div">
+                <div>Casual Leave: Taken <span id="casual-taken">0</span> days | Remaining <span id="casual-rem">21</span> days</div>
+                <div>Sick Leave: Taken <span id="sick-taken">0</span> days | Remaining <span id="sick-rem">24</span> days</div>
+                <div>Total Limited Leave: Taken <span id="total-taken">0</span> days | Remaining <span id="total-rem">45</span> days</div>
+            </div>
+
+            <h2>Apply for Leave</h2>
+            <form id="leave-form">
+                <label>Name of Applicant</label>
+                <input type="text" id="name" required>
+                <label>Registration Number</label>
+                <input type="text" id="reg-number" required placeholder="e.g., NCOET/STAFF/001">
+                <label>Applicant's Email (for notifications)</label>
+                <input type="email" id="applicant-email" required placeholder="example@ncoet.lk">
+                <label>Designation</label>
+                <input type="text" id="designation" required>
+                <label>Department / Station</label>
+                <input type="text" id="station" placeholder="e.g., Kuliyapitiya / Colombo" required>
+                <label>Type of Leave</label>
+                <select id="leave-type" required>
+                    <option value="casual">Casual Leave</option>
+                    <option value="sick">Sick Leave</option>
+                    <option value="duty">Duty Leave</option>
+                </select>
+                <label>Leave Applied From (Date)</label>
+                <input type="date" id="from-date" required>
+                <label>Leave Applied To (Date)</label>
+                <input type="date" id="to-date" required>
+                <label>Prefix / Suffix Holidays (if any)</label>
+                <input type="text" id="prefix-suffix" placeholder="e.g., Prefix Poya Day, Suffix Weekend">
+                <label>Reason for Leave</label>
+                <textarea id="reason" rows="3" required></textarea>
+                <label>Address During Leave</label>
+                <textarea id="address" rows="2" required></textarea>
+                <h3>Covering Officer Details (Required)</h3>
+                <label>Covering Officer Name</label>
+                <input type="text" id="covering-name" required>
+                <label>Covering Officer Position</label>
+                <input type="text" id="covering-position" required>
+                <label>Covering Officer Email</label>
+                <input type="email" id="covering-email" required placeholder="covering@example.ncoet.lk">
+                <div id="medical-upload" style="display:none; margin-top:15px;">
+                    <label>Upload Medical Certificate (Image or PDF)</label>
+                    <p class="help-text">Required <strong>only</strong> if sick leave exceeds 2 days.</p>
+                    <input type="file" id="medical-file" accept="image/*,application/pdf">
+                </div>
+                <button type="submit">Submit Leave Application</button>
+            </form>
+            <div id="message"></div>
+            <h2>Leave Applications History & Approval</h2>
+            <div class="export-btn">
+                <button onclick="downloadCSV()">Download History as CSV</button>
+            </div>
+            <table id="history-table">
+                <thead>
+                    <tr>
+                        <th>Date Applied</th>
+                        <th>Name</th>
+                        <th>Reg No.</th>
+                        <th>Email</th>
+                        <th>Designation</th>
+                        <th>Station</th>
+                        <th>Type</th>
+                        <th>From</th>
+                        <th>To</th>
+                        <th>Days</th>
+                        <th>Prefix/Suffix</th>
+                        <th>Reason</th>
+                        <th>Address</th>
+                        <th>Covering Name</th>
+                        <th>Covering Position</th>
+                        <th>Covering Email</th>
+                        <th>Medical Cert</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // === CHANGE THESE PASSWORDS FOR SECURITY ===
+        const VP_ADMIN_PASSWORD = "vpadmin123";
+        const PRESIDENT_PASSWORD = "president123";
+        // ===========================================
+
+        let applications = [];
+        if (localStorage.getItem('leaveApplications')) {
+            applications = JSON.parse(localStorage.getItem('leaveApplications'));
+        }
+
+        let staffProfiles = JSON.parse(localStorage.getItem('staffProfiles') || '{}');
+
+        let currentRole = localStorage.getItem('currentRole') || null;
+        let currentReg = localStorage.getItem('currentReg') || null;
+
+        function getCurrentTaken(regNumber) {
+            let takenCasual = 0;
+            let takenSick = 0;
+            applications.forEach(app => {
+                if (app.status === 'Approved' && app.regNumber === regNumber) {
+                    if (app.type === 'Casual Leave') takenCasual += app.days;
+                    else if (app.type === 'Sick Leave') takenSick += app.days;
+                }
+            });
+            return { casual: takenCasual, sick: takenSick };
+        }
+
+        function calculateBalances(regNumber) {
+            const taken = getCurrentTaken(regNumber);
+            const totalTaken = taken.casual + taken.sick;
+            document.getElementById('casual-taken').textContent = taken.casual;
+            document.getElementById('casual-rem').textContent = 21 - taken.casual;
+            document.getElementById('sick-taken').textContent = taken.sick;
+            document.getElementById('sick-rem').textContent = 24 - taken.sick;
+            document.getElementById('total-taken').textContent = totalTaken;
+            document.getElementById('total-rem').textContent = 45 - totalTaken;
+        }
+
+        function calculateDays(from, to) {
+            const oneDay = 24 * 60 * 60 * 1000;
+            const fromDate = new Date(from);
+            const toDate = new Date(to);
+            return Math.round(Math.abs((toDate - fromDate) / oneDay)) + 1;
+        }
+
+        function toggleMedical() {
+            const medicalDiv = document.getElementById('medical-upload');
+            if (document.getElementById('leave-type').value === 'sick') {
+                medicalDiv.style.display = 'block';
+            } else {
+                medicalDiv.style.display = 'none';
+                document.getElementById('medical-file').value = '';
+            }
+        }
+        document.getElementById('leave-type').addEventListener('change', toggleMedical);
+
+        function readFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve({ name: file.name, data: reader.result, type: file.type });
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function getDisplayStatus(status) {
+            switch(status || 'Pending') {
+                case 'Pending': return 'Pending';
+                case 'Recommended': return 'Recommended by VP Admin';
+                case 'Approved': return 'Approved by President';
+                case 'Rejected': return 'Rejected';
+                default: return status || 'Pending';
+            }
+        }
+
+        function loadHistory() {
+            const tbody = document.querySelector('#history-table tbody');
+            tbody.innerHTML = '';
+            applications.forEach((app, index) => {
+                if (currentRole === 'applicant' && app.regNumber !== currentReg) return;
+
+                const row = document.createElement('tr');
+                const displayStatus = getDisplayStatus(app.status);
+
+                let action = '';
+                if (currentRole === 'president') {
+                    action += `<button class="small delete" onclick="handleAction(${index}, 'delete')">Delete</button>`;
+                }
+                if (currentRole === 'vpadmin' && (!app.status || app.status === 'Pending')) {
+                    action += ` <button class="small" onclick="handleAction(${index}, 'recommend')">Recommend</button>
+                                <button class="small reject" onclick="handleAction(${index}, 'reject')">Reject</button>`;
+                }
+                if (currentRole === 'president' && app.status === 'Recommended') {
+                    action += ` <button class="small" onclick="handleAction(${index}, 'approve')">Approve</button>
+                                <button class="small reject" onclick="handleAction(${index}, 'reject')">Reject</button>`;
+                }
+                if (action === '') action = '-';
+
+                const medicalLink = app.medical
+                    ? `<a href="${app.medical.data}" target="_blank" download="${app.medical.name}" class="link">View/Download (${app.medical.name})</a>`
+                    : '-';
+
+                row.innerHTML = `
+                    <td>${app.date}</td>
+                    <td>${app.name}</td>
+                    <td>${app.regNumber || '-'}</td>
+                    <td>${app.email || ''}</td>
+                    <td>${app.designation || ''}</td>
+                    <td>${app.station || ''}</td>
+                    <td>${app.type}</td>
+                    <td>${app.from}</td>
+                    <td>${app.to}</td>
+                    <td>${app.days}</td>
+                    <td>${app.prefixSuffix || 'None'}</td>
+                    <td class="reason">${app.reason}</td>
+                    <td>${app.address || ''}</td>
+                    <td>${app.coveringName || ''}</td>
+                    <td>${app.coveringPosition || ''}</td>
+                    <td>${app.coveringEmail || ''}</td>
+                    <td>${medicalLink}</td>
+                    <td>${displayStatus}</td>
+                    <td>${action}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('balances-div').style.display = (currentRole === 'applicant') ? 'block' : 'none';
+            if (currentRole === 'applicant' && currentReg) {
+                calculateBalances(currentReg);
+            }
+        }
+
+        function prefillApplicantForm() {
+            if (currentRole !== 'applicant' || !currentReg) return;
+            const profile = staffProfiles[currentReg] || {};
+            document.getElementById('name').value = profile.name || '';
+            if (profile.name) document.getElementById('name').disabled = true;
+            document.getElementById('reg-number').value = currentReg;
+            document.getElementById('reg-number').disabled = true;
+            document.getElementById('applicant-email').value = profile.email || '';
+            document.getElementById('designation').value = profile.designation || '';
+            document.getElementById('station').value = profile.station || '';
+        }
+
+        function handleAction(index, actionType) {
+            const app = applications[index];
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = '';
+            messageDiv.className = '';
+
+            let newStatus;
+            let roleDisplay = currentRole === 'vpadmin' ? 'VP Admin' : 'President';
+
+            if (actionType === 'recommend') newStatus = 'Recommended';
+            else if (actionType === 'approve') newStatus = 'Approved';
+            else if (actionType === 'delete') {
+                if (confirm('Are you sure you want to permanently delete this application?')) {
+                    applications.splice(index, 1);
+                    localStorage.setItem('leaveApplications', JSON.stringify(applications));
+                    loadHistory();
+                    messageDiv.textContent = 'Application permanently deleted.';
+                    messageDiv.className = 'alert';
+                }
+                return;
+            } else newStatus = 'Rejected';
+
+            app.status = newStatus;
+            localStorage.setItem('leaveApplications', JSON.stringify(applications));
+            loadHistory();
+            messageDiv.textContent = `Leave ${newStatus.toLowerCase()} successfully by ${roleDisplay}.`;
+            messageDiv.className = newStatus === 'Rejected' ? 'alert' : 'success';
+
+            if (newStatus === 'Approved' || newStatus === 'Rejected') {
+                const decisionText = newStatus === 'Approved' ? 'granted' : 'not granted';
+                let body = `Dear ${app.name},
+
+Your application for ${app.type} (${app.days} day(s)) from ${app.from} to ${app.to} has been ${decisionText}.
+
+Reason provided: ${app.reason}
+
+`;
+                if (newStatus === 'Approved') {
+                    body += `Your duties will be covered by ${app.coveringName} (${app.coveringPosition}). Please ensure proper handover.
+(Note: A blind copy of this approval has been sent to the covering officer.)
+
+`;
+                } else {
+                    body += `Please contact the administration for further clarification.
+
+`;
+                }
+                body += `Best regards,
+${roleDisplay}, NCOET
+NCOET Administration`;
+
+                const subject = `NCOET Leave Application - ${newStatus}`;
+                let mailto = `mailto:${app.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                if (newStatus === 'Approved' && app.coveringEmail) {
+                    mailto += `&bcc=${encodeURIComponent(app.coveringEmail)}`;
+                }
+                window.open(mailto, '_blank');
+            }
+        }
+
+        document.getElementById('leave-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = '';
+            messageDiv.className = '';
+
+            const typeVal = document.getElementById('leave-type').value;
+            const typeDisplay = typeVal === 'casual' ? 'Casual Leave' : typeVal === 'sick' ? 'Sick Leave' : 'Duty Leave';
+            const applicantName = document.getElementById('name').value.trim();
+            const regNumber = document.getElementById('reg-number').value.trim();
+            const from = document.getElementById('from-date').value;
+            const to = document.getElementById('to-date').value;
+
+            if (!applicantName) {
+                messageDiv.textContent = 'Error: Name of Applicant is required.';
+                messageDiv.className = 'alert';
+                return;
+            }
+            if (!regNumber) {
+                messageDiv.textContent = 'Error: Registration Number is required.';
+                messageDiv.className = 'alert';
+                return;
+            }
+
+            if (new Date(from) > new Date(to)) {
+                messageDiv.textContent = 'Error: "From" date cannot be after "To" date.';
+                messageDiv.className = 'alert';
+                return;
+            }
+
+            const days = calculateDays(from, to);
+
+            if (typeVal !== 'duty') {
+                const taken = getCurrentTaken(regNumber);
+                const remCasual = 21 - taken.casual;
+                const remSick = 24 - taken.sick;
+                if ((typeVal === 'casual' && days > remCasual) || (typeVal === 'sick' && days > remSick)) {
+                    const leaveTypeName = typeVal === 'casual' ? 'Casual Leave' : 'Sick Leave';
+                    const remaining = typeVal === 'casual' ? remCasual : remSick;
+                    messageDiv.textContent = `Error: Insufficient ${leaveTypeName} balance for Reg No. ${regNumber} (Remaining: ${remaining} days).`;
+                    messageDiv.className = 'alert';
+                    return;
+                }
+            }
+
+            let medical = null;
+            const fileInput = document.getElementById('medical-file');
+            const medicalRequired = (typeVal === 'sick' && days > 2);
+            if (medicalRequired && fileInput.files.length === 0) {
+                messageDiv.textContent = 'Error: Medical certificate is required for sick leave exceeding 2 days.';
+                messageDiv.className = 'alert';
+                return;
+            }
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                try {
+                    medical = await readFile(file);
+                } catch (err) {
+                    messageDiv.textContent = 'Error reading the uploaded file.';
+                    messageDiv.className = 'alert';
+                    return;
+                }
+            }
+
+            const application = {
+                date: new Date().toLocaleDateString(),
+                name: applicantName,
+                regNumber: regNumber,
+                email: document.getElementById('applicant-email').value,
+                designation: document.getElementById('designation').value,
+                station: document.getElementById('station').value,
+                type: typeDisplay,
+                from: from,
+                to: to,
+                days: days,
+                prefixSuffix: document.getElementById('prefix-suffix').value,
+                reason: document.getElementById('reason').value,
+                address: document.getElementById('address').value,
+                coveringName: document.getElementById('covering-name').value,
+                coveringPosition: document.getElementById('covering-position').value,
+                coveringEmail: document.getElementById('covering-email').value,
+                medical: medical,
+                status: 'Pending'
+            };
+
+            applications.push(application);
+            localStorage.setItem('leaveApplications', JSON.stringify(applications));
+
+            // Save/update profile for applicant
+            if (currentRole === 'applicant') {
+                staffProfiles[currentReg] = {
+                    name: applicantName,
+                    email: document.getElementById('applicant-email').value,
+                    designation: document.getElementById('designation').value,
+                    station: document.getElementById('station').value
+                };
+                localStorage.setItem('staffProfiles', JSON.stringify(staffProfiles));
+
+                // Lock name and pre-fill other fields for next time
+                document.getElementById('name').disabled = true;
+                prefillApplicantForm();
+            }
+
+            messageDiv.textContent = 'Leave application submitted successfully. Status: Pending approval.';
+            messageDiv.className = 'success';
+            loadHistory();
+            this.reset();
+            prefillApplicantForm(); // Re-apply pre-fills after reset
+            toggleMedical();
+        });
+
+        function downloadCSV() {
+            let csv = "Date Applied,Name,Reg No.,Email,Designation,Station,Type,From,To,Days,Prefix/Suffix,Reason,Address,Covering Name,Covering Position,Covering Email,Medical Certificate,Status\n";
+            applications.forEach(app => {
+                const row = [
+                    app.date,
+                    app.name,
+                    app.regNumber || 'None',
+                    app.email || '',
+                    app.designation || '',
+                    app.station || '',
+                    app.type,
+                    app.from,
+                    app.to,
+                    app.days,
+                    app.prefixSuffix || 'None',
+                    `"${(app.reason || '').replace(/"/g, '""')}"`,
+                    `"${(app.address || '').replace(/"/g, '""')}"`,
+                    app.coveringName || '',
+                    app.coveringPosition || '',
+                    app.coveringEmail || '',
+                    app.medical ? `"${app.medical.name.replace(/"/g, '""')}"` : 'None',
+                    getDisplayStatus(app.status)
+                ].join(',');
+                csv += row + "\n";
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'ncoet_leave_history.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function toggleLoginFields() {
+            const role = document.getElementById('login-role').value;
+            document.getElementById('applicant-reg-div').style.display = (role === 'applicant') ? 'block' : 'none';
+            document.getElementById('password-div').style.display = (role === 'applicant') ? 'none' : 'block';
+        }
+
+        function performLogin() {
+            const roleVal = document.getElementById('login-role').value;
+            let valid = false;
+            let regNum = '';
+
+            if (roleVal === 'applicant') {
+                regNum = document.getElementById('login-reg').value.trim();
+                if (regNum) valid = true;
+            } else {
+                const pass = document.getElementById('login-password').value;
+                if (roleVal === 'vpadmin' && pass === VP_ADMIN_PASSWORD) valid = true;
+                if (roleVal === 'president' && pass === PRESIDENT_PASSWORD) valid = true;
+            }
+
+            if (!valid) {
+                alert('Invalid Registration Number or password. Please try again.');
+                return;
+            }
+
+            currentRole = roleVal === 'applicant' ? 'applicant' : roleVal;
+            currentReg = roleVal === 'applicant' ? regNum : null;
+
+            localStorage.setItem('currentRole', currentRole);
+            if (currentRole === 'applicant') localStorage.setItem('currentReg', currentReg);
+
+            document.getElementById('login-container').style.display = 'none';
+            document.getElementById('main-container').style.display = 'block';
+            document.getElementById('logged-in-info').style.display = 'block';
+
+            const displayText = currentRole === 'applicant' ? `Applicant (Reg No: ${currentReg})` :
+                               currentRole === 'vpadmin' ? 'VP Admin' : 'President';
+            document.getElementById('user-display').textContent = displayText;
+
+            prefillApplicantForm();
+            toggleMedical();
+            loadHistory();
+        }
+
+        function logout() {
+            localStorage.removeItem('currentRole');
+            localStorage.removeItem('currentReg');
+            location.reload();
+        }
+
+        // Initial load
+        if (currentRole) {
+            document.getElementById('login-container').style.display = 'none';
+            document.getElementById('main-container').style.display = 'block';
+            document.getElementById('logged-in-info').style.display = 'block';
+
+            const displayText = currentRole === 'applicant' ? `Applicant (Reg No: ${currentReg})` :
+                               currentRole === 'vpadmin' ? 'VP Admin' : 'President';
+            document.getElementById('user-display').textContent = displayText;
+
+            prefillApplicantForm();
+            toggleMedical();
+            loadHistory();
+        } else {
+            toggleLoginFields();
+        }
+    </script>
+</body>
+</html>

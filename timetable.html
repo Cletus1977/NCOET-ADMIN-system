@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NCOET Kuliyapitiya - Dynamic Timetable Generator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            background-color: #ffbf00 ;
+            color: #333;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background:  #b9f2ff ;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        h1, h2 { text-align: center; color: #f5fffa#f8b878 ; }
+        .note {
+            background: #ffa07a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            font-style: italic;
+            text-align: center;
+        }
+        .setup {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        label { display: block; margin: 10px 0 5px; font-weight: 500; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #dfe6e9; border-radius: 6px; }
+        button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover { background: #5a67d8; }
+        .subjects-list {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .subject-item {
+            padding: 15px;
+            margin: 10px 0;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .subject-info { flex: 1; }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .edit-btn {
+            background: #f39c12;
+            padding: 6px 12px;
+            font-size: 0.9rem;
+        }
+        .edit-btn:hover { background: #e67e22; }
+        .remove-btn {
+            background: #e74c3c;
+            padding: 6px 12px;
+            font-size: 0.9rem;
+        }
+        .remove-btn:hover { background: #c0392b; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 40px;
+            font-size: 1rem;
+        }
+        th, td {
+            border: 1px solid #dfe6e9;
+            padding: 12px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+        .fixed {
+            background: #fff3cd;
+            font-style: italic;
+            font-size: 0.95rem;
+        }
+        .free {
+            background: #e9ecef;
+            color: #6c757d;
+        }
+        .subject-cell {
+            white-space: pre-line;
+            line-height: 1.4;
+        }
+        .actions {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .actions button {
+            font-size: 1.1rem;
+            padding: 12px 30px;
+            margin: 0 15px;
+        }
+        .clear-btn { background: #6c757d; }
+        .clear-btn:hover { background: #545b62; }
+        .download-btn { background: #27ae60; }
+        .download-btn:hover { background: #1e8449; }
+        .conflict-note {
+            background: #fff3cd;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-weight: 500;
+            text-align: center;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>NCOET Kuliyapitiya</h1>
+        <h2 id="classTitle">Dynamic Weekly Timetable Generator</h2>
+
+        <div class="note">
+            <strong>Note:</strong> Each subject typically has 30 notional hours per semester (20 teaching/contact hours + 10 self-study hours).<br>
+            Schedule the required number of 2-hour teaching sessions per week accordingly (e.g., 3 sessions/week ≈ 30 teaching hours over 15 weeks).
+        </div>
+
+        <div class="conflict-note">
+            <strong>Lecturer Conflict Prevention:</strong> The generator automatically prevents scheduling conflicts for the same lecturer within this class/batch.<br>
+            If a lecturer teaches multiple subjects in this timetable, their sessions will never overlap in the same time slot.
+        </div>
+
+        <div class="setup">
+            <div>
+                <label for="faculty">Faculty</label>
+                <select id="faculty">
+                    <option value="ET">Engineering Technology (ET)</option>
+                    <option value="BST">Bio Systems Technology (BST)</option>
+                    <option value="IT">Information Technology (IT)</option>
+                </select>
+            </div>
+            <div>
+                <label for="year">Academic Year</label>
+                <select id="year">
+                    <option>1st</option>
+                    <option>2nd</option>
+                    <option>3rd</option>
+                </select>
+            </div>
+            <div>
+                <label for="semester">Academic Semester</label>
+                <select id="semester">
+                    <option>1st</option>
+                    <option>2nd</option>
+                </select>
+            </div>
+        </div>
+
+        <h3>Add / Edit Subject</h3>
+        <div class="setup">
+            <div>
+                <label for="subjectName">Subject Name </label>
+				<input type="text" id="subjectName" placeholder="e.g. Mechanics II">
+				<label for="subjectCode">Subject Code </label>
+                <input type="text" id="subjectCode" placeholder="e.g. BED2025/101">
+            </div>
+            <div>
+                <label for="lecturerName">Lecturer Name</label>
+                <input type="text" id="lecturerName" placeholder="e.g. Mr. A.B. Perera">
+            </div>
+            <div>
+                <label for="lecturerType">Lecturer Type</label>
+                <select id="lecturerType">
+                    <option value="Permanent">Permanent</option>
+                    <option value="Attachment">Attachment</option>
+                    <option value="Visiting">Visiting</option>
+                </select>
+            </div>
+            <div>
+                <label for="sessions">Number of 2-hour teaching sessions per week</label>
+                <input type="number" id="sessions" min="1" max="10" value="2">
+            </div>
+        </div>
+        <div>
+            <label>Cannot schedule on (exempt days):</label>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px;">
+                <label><input type="checkbox" value="Monday"> Monday</label>
+                <label><input type="checkbox" value="Tuesday"> Tuesday</label>
+                <label><input type="checkbox" value="Wednesday"> Wednesday</label>
+                <label><input type="checkbox" value="Thursday"> Thursday</label>
+                <label><input type="checkbox" value="Friday"> Friday</label>
+            </div>
+        </div>
+        <button id="addSubjectBtn">Add Subject</button>
+
+        <div class="subjects-list" id="subjectsList">
+            <p>No subjects added yet.</p>
+        </div>
+
+        <div class="actions">
+            <button id="generateBtn">Generate Timetable</button>
+            <button class="download-btn" id="downloadCSV">Download as CSV</button>
+            <button class="clear-btn" id="clearSubjects">Clear All Subjects</button>
+        </div>
+
+        <table id="timetable">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Monday</th>
+                    <th>Tuesday</th>
+                    <th>Wednesday</th>
+                    <th>Thursday</th>
+                    <th>Friday</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>7:45 - 8:00 am</td>
+                    <td colspan="5" class="fixed">Religious Activities (daily)</td>
+                </tr>
+                <tr>
+                    <td>8:00 - 10:00 am<br><span style="font-size:0.85rem;">(Wed: 9:00 - 10:00 only)</span></td>
+                    <td id="monday-morning" class="free">Free Period</td>
+                    <td id="tuesday-morning" class="free">Free Period</td>
+                    <td class="fixed">Main Assembly<br>7:45 - 9:00 am<br><br>Short Teaching Session<br>9:00 - 10:00 am</td>
+                    <td id="thursday-morning" class="free">Free Period</td>
+                    <td id="friday-morning" class="free">Free Period</td>
+                </tr>
+                <tr>
+                    <td>10:00 - 10:30 am</td>
+                    <td colspan="5" class="fixed">Tea Break</td>
+                </tr>
+                <tr>
+                    <td>10:30 am - 12:30 pm</td>
+                    <td id="monday-mid" class="free">Free Period</td>
+                    <td id="tuesday-mid" class="free">Free Period</td>
+                    <td id="wednesday-mid" class="free">Free Period</td>
+                    <td id="thursday-mid" class="free">Free Period</td>
+                    <td id="friday-mid" class="free">Free Period</td>
+                </tr>
+                <tr>
+                    <td>12:30 - 1:30 pm</td>
+                    <td colspan="5" class="fixed">Lunch Break</td>
+                </tr>
+                <tr>
+                    <td>1:30 - 3:30 pm</td>
+                    <td id="monday-afternoon" class="free">Free Period</td>
+                    <td id="tuesday-afternoon" class="free">Free Period</td>
+                    <td id="wednesday-afternoon" class="free">Free Period</td>
+                    <td id="thursday-afternoon" class="free">Free Period</td>
+                    <td id="friday-afternoon" class="free">Free Period</td>
+                </tr>
+                <tr>
+                    <td>4:00 - 6:00 pm</td>
+                    <td colspan="5" class="fixed">Extra-curricular Activities</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+        const slots = ["morning", "mid", "afternoon"];
+        const hues = [30, 60, 120, 180, 240, 270, 300, 330, 0, 90, 150, 210];
+
+        let subjects = [];
+        let colors = {};
+        let colorIndex = 0;
+        let editingIndex = -1; // Track if we are editing a subject
+
+        const facultySelect = document.getElementById('faculty');
+        const yearSelect = document.getElementById('year');
+        const semesterSelect = document.getElementById('semester');
+        const classTitle = document.getElementById('classTitle');
+        const addSubjectBtn = document.getElementById('addSubjectBtn');
+
+        function updateTitle() {
+            const facultyMap = {ET: "Engineering Technology", BST: "Bio Systems Technology", IT: "Information Technology"};
+            const f = facultyMap[facultySelect.value] || facultySelect.value;
+            classTitle.textContent = `${f} - ${yearSelect.value} Year, ${semesterSelect.value} Semester Weekly Timetable`;
+        }
+        facultySelect.addEventListener('change', updateTitle);
+        yearSelect.addEventListener('change', updateTitle);
+        semesterSelect.addEventListener('change', updateTitle);
+        updateTitle();
+
+        function shuffle(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function clearForm() {
+            document.getElementById('subjectName').value = '';
+            document.getElementById('lecturerName').value = '';
+            document.getElementById('lecturerType').selectedIndex = 0;
+            document.getElementById('sessions').value = 2;
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            editingIndex = -1;
+            addSubjectBtn.textContent = 'Add Subject';
+        }
+
+        function loadSubjectToForm(index) {
+            const sub = subjects[index];
+            document.getElementById('subjectName').value = sub.name;
+            document.getElementById('lecturerName').value = sub.lecturerName;
+            document.getElementById('lecturerType').value = sub.lecturerType;
+            document.getElementById('sessions').value = sub.sessions;
+
+            // Clear and set exempt days
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            sub.exemptDays.forEach(day => {
+                const cb = document.querySelector(`input[value="${day}"]`);
+                if (cb) cb.checked = true;
+            });
+
+            editingIndex = index;
+            addSubjectBtn.textContent = 'Update Subject';
+        }
+
+        function refreshSubjectsList() {
+            const list = document.getElementById('subjectsList');
+            if (subjects.length === 0) {
+                list.innerHTML = '<p>No subjects added yet.</p>';
+                return;
+            }
+            list.innerHTML = '<h3>Added Subjects</h3>';
+            const ul = document.createElement('div');
+            subjects.forEach((sub, idx) => {
+                const div = document.createElement('div');
+                div.className = 'subject-item';
+                const color = colors[sub.name] || '#ffffff';
+                div.style.borderLeft = `8px solid ${color}`;
+                div.innerHTML = `
+                    <div class="subject-info">
+                        <strong>${sub.name}</strong><br>
+                        Lecturer: ${sub.lecturerName} (${sub.lecturerType})<br>
+                        ${sub.sessions} × 2-hour teaching session(s)/week<br>
+                        Exempt days: ${sub.exemptDays.length ? sub.exemptDays.join(', ') : 'None'}
+                    </div>
+                    <div class="action-buttons">
+                        <button class="edit-btn" data-index="${idx}">Edit</button>
+                        <button class="remove-btn" data-index="${idx}">Remove</button>
+                    </div>
+                `;
+                ul.appendChild(div);
+            });
+            list.appendChild(ul);
+
+            // Edit buttons
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const i = parseInt(btn.dataset.index);
+                    loadSubjectToForm(i);
+                });
+            });
+
+            // Remove buttons
+            document.querySelectorAll('.remove-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (confirm('Remove this subject?')) {
+                        subjects.splice(parseInt(btn.dataset.index), 1);
+                        refreshSubjectsList();
+                    }
+                });
+            });
+        }
+
+        addSubjectBtn.addEventListener('click', () => {
+            const name = document.getElementById('subjectName').value.trim();
+            const lecturerName = document.getElementById('lecturerName').value.trim();
+            const lecturerType = document.getElementById('lecturerType').value;
+            const sessions = parseInt(document.getElementById('sessions').value);
+
+            if (!name || !lecturerName || isNaN(sessions) || sessions < 1) {
+                alert('Please fill in subject name, lecturer name, and valid number of sessions.');
+                return;
+            }
+
+            const exemptCheckboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+            const exemptDays = Array.from(exemptCheckboxes).map(cb => cb.value);
+
+            // Handle color (reassign if name changed during edit)
+            const oldName = editingIndex >= 0 ? subjects[editingIndex].name : null;
+            if (oldName && oldName !== name) {
+                delete colors[oldName]; // Remove old color if name changed
+            }
+            if (!colors[name]) {
+                colors[name] = `hsl(${hues[colorIndex++ % hues.length]}, 70%, 85%)`;
+            }
+
+            const newSub = {name, lecturerName, lecturerType, sessions, exemptDays};
+
+            if (editingIndex >= 0) {
+                subjects[editingIndex] = newSub;
+            } else {
+                subjects.push(newSub);
+            }
+
+            clearForm();
+            refreshSubjectsList();
+        });
+
+        document.getElementById('clearSubjects').addEventListener('click', () => {
+            if (confirm('Clear all subjects?')) {
+                subjects = [];
+                colors = {};
+                colorIndex = 0;
+                clearForm();
+                refreshSubjectsList();
+                clearTimetable();
+            }
+        });
+
+        function clearTimetable() {
+            document.querySelectorAll('[id$="-morning"], [id$="-mid"], [id$="-afternoon"]').forEach(cell => {
+                cell.innerHTML = 'Free Period';
+                cell.style.backgroundColor = '';
+                cell.classList.add('free');
+                cell.classList.remove('subject-cell');
+            });
+        }
+
+        document.getElementById('generateBtn').addEventListener('click', () => {
+            if (subjects.length === 0) {
+                alert('Add at least one subject first.');
+                return;
+            }
+
+            clearTimetable();
+
+            const possibleSlots = [];
+            days.forEach(day => {
+                const lower = day.toLowerCase();
+                if (day !== 'Wednesday') {
+                    possibleSlots.push({day: lower, slot: 'morning'});
+                }
+                possibleSlots.push({day: lower, slot: 'mid'});
+                possibleSlots.push({day: lower, slot: 'afternoon'});
+            });
+
+            const assigned = {};
+            days.forEach(day => {
+                assigned[day.toLowerCase()] = {morning: null, mid: null, afternoon: null};
+            });
+
+            const sortedSubjects = [...subjects].sort((a, b) => b.sessions - a.sessions);
+
+            let success = true;
+            for (const sub of sortedSubjects) {
+                let available = possibleSlots.filter(s => {
+                    const capitalizedDay = s.day.charAt(0).toUpperCase() + s.day.slice(1);
+                    return assigned[s.day][s.slot] === null &&
+                           !sub.exemptDays.includes(capitalizedDay);
+                });
+
+                if (available.length < sub.sessions) {
+                    alert(`Cannot schedule "${sub.name}": not enough free slots (needs ${sub.sessions}, only ${available.length} available after exemptions).`);
+                    success = false;
+                    break;
+                }
+
+                const shuffled = shuffle(available);
+                for (let i = 0; i < sub.sessions; i++) {
+                    const chosen = shuffled[i];
+                    assigned[chosen.day][chosen.slot] = sub;
+                }
+            }
+
+            if (success) {
+                Object.keys(assigned).forEach(day => {
+                    Object.keys(assigned[day]).forEach(slot => {
+                        const sub = assigned[day][slot];
+                        const cellId = `${day}-${slot}`;
+                        const cell = document.getElementById(cellId);
+                        if (cell) {
+                            if (sub) {
+                                cell.innerHTML = `${sub.name}\n${sub.lecturerName}\n(${sub.lecturerType})`;
+                                cell.style.backgroundColor = colors[sub.name];
+                                cell.classList.add('subject-cell');
+                                cell.classList.remove('free');
+                            } else {
+                                cell.innerHTML = 'Free Period';
+                                cell.classList.add('free');
+                            }
+                        }
+                    });
+                });
+                alert('Timetable generated successfully! Click "Generate Timetable" again for a different random arrangement.\nYou can now download it as CSV.');
+            }
+        });
+
+        // Download as CSV
+        document.getElementById('downloadCSV').addEventListener('click', () => {
+            const table = document.getElementById('timetable');
+            let csv = [];
+
+            for (let row of table.rows) {
+                let rowData = [];
+                for (let cell of row.cells) {
+                    let text = cell.innerText.trim();
+                    if (text.includes(',') || text.includes('"') || text.includes('\n')) {
+                        text = '"' + text.replace(/"/g, '""') + '"';
+                    }
+                    rowData.push(text);
+                }
+                csv.push(rowData.join(','));
+            }
+
+            const csvContent = csv.join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `NCOET_${facultySelect.value}_${yearSelect.value}Year_${semesterSelect.value}Sem_Timetable.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    </script>
+</body>
+</html>
